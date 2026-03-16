@@ -1,0 +1,10 @@
+{
+  "id": "plugin-list-toggler",
+  "name": "插件分组开关闭",
+  "version": "0.0.1",
+  "minAppVersion": "1.5.0",
+  "description": "Pick installed community plugins from a modal, save them as groups, and register each group as direct commands.",
+  "author": "SuSequs-X",
+  "authorUrl": "https://github.com/SuSequs-X",
+  "isDesktopOnly": false
+}
