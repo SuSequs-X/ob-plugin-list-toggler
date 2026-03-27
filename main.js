@@ -4,6 +4,7 @@ const {
   Setting,
   Notice,
   Modal,
+  ButtonComponent,
 } = require('obsidian');
 
 const DEFAULT_SETTINGS = {
@@ -120,6 +121,10 @@ class PluginGroupTogglePlugin extends Plugin {
       });
   }
 
+  getPluginDisplayName(id) {
+    return this.app.plugins?.manifests?.[id]?.name || id;
+  }
+
   shouldSkipPlugin(id) {
     return Boolean(this.settings.skipSelf && id === this.manifest.id);
   }
@@ -222,7 +227,7 @@ class PluginGroupTogglePlugin extends Plugin {
     const details = [];
 
     for (const id of ids) {
-      const pluginName = this.app.plugins?.manifests?.[id]?.name || id;
+      const pluginName = this.getPluginDisplayName(id);
       const result = await this.setPluginState(id, enable);
 
       if (result.status === 'changed') {
@@ -345,7 +350,7 @@ class PluginGroupTogglePlugin extends Plugin {
 
     for (const id of ids) {
       const current = this.isPluginEnabled(id);
-      const pluginName = this.app.plugins?.manifests?.[id]?.name || id;
+      const pluginName = this.getPluginDisplayName(id);
       const result = await this.setPluginState(id, !current);
 
       if (result.status === 'changed') {
@@ -478,6 +483,47 @@ class PluginGroupTogglePlugin extends Plugin {
       groups.push(newGroup);
     }
 
+    this.settings.groups = groups;
+    this.normalizeGroups();
+    await this.saveSettings();
+    this.refreshGroupCommands();
+    return true;
+  }
+
+  async replaceGroup(oldName, newName, pluginIds) {
+    const oldTrimmed = String(oldName || '').trim();
+    const newTrimmed = String(newName || '').trim();
+    const ids = Array.from(new Set((pluginIds || []).map((id) => String(id).trim()).filter(Boolean)));
+
+    if (!oldTrimmed) {
+      new Notice('原分组名称不能为空');
+      return false;
+    }
+
+    if (!newTrimmed) {
+      new Notice('分组名称不能为空');
+      return false;
+    }
+
+    if (!ids.length) {
+      new Notice('分组内至少保留一个插件');
+      return false;
+    }
+
+    const groups = this.getGroups();
+    const targetIndex = groups.findIndex((group) => group.name === oldTrimmed);
+    if (targetIndex < 0) {
+      new Notice(`分组不存在：${oldTrimmed}`);
+      return false;
+    }
+
+    const duplicateIndex = groups.findIndex((group) => group.name === newTrimmed && group.name !== oldTrimmed);
+    if (duplicateIndex >= 0) {
+      new Notice(`已存在同名分组：${newTrimmed}`);
+      return false;
+    }
+
+    groups[targetIndex] = { name: newTrimmed, pluginIds: ids };
     this.settings.groups = groups;
     this.normalizeGroups();
     await this.saveSettings();
@@ -878,6 +924,249 @@ class GroupNameModal extends Modal {
   }
 }
 
+class GroupManageModal extends Modal {
+  constructor(app, plugin, groupName, onSaved) {
+    super(app);
+    this.plugin = plugin;
+    this.originalGroupName = groupName;
+    this.onSaved = onSaved;
+    this.keyword = '';
+
+    const group = plugin.getGroupByName(groupName);
+    this.groupName = group?.name || groupName;
+    this.selectedIds = new Set(group?.pluginIds || []);
+    this.orderedPluginIds = Array.from(group?.pluginIds || []);
+    this.installedPlugins = plugin.getInstalledCommunityPlugins();
+  }
+
+  onOpen() {
+    this.modalEl.addClass('plugin-group-toggle-modal', 'pgt-manage-modal');
+
+    const { contentEl } = this;
+    contentEl.empty();
+
+    contentEl.createEl('h2', { text: `管理分组：${this.originalGroupName}` });
+
+    const nameWrap = contentEl.createDiv({ cls: 'pgt-manage-name-wrap' });
+    nameWrap.createEl('div', { text: '分组名称', cls: 'pgt-manage-label' });
+    this.nameInput = nameWrap.createEl('input', {
+      type: 'text',
+      value: this.groupName,
+      placeholder: '输入分组名称',
+      cls: 'pgt-group-name',
+    });
+
+    const searchWrap = contentEl.createDiv({ cls: 'pgt-manage-name-wrap' });
+    searchWrap.createEl('div', { text: '添加插件搜索', cls: 'pgt-manage-label' });
+    this.searchInput = searchWrap.createEl('input', {
+      type: 'text',
+      placeholder: '搜索可加入该分组的插件名称或 ID…',
+      cls: 'pgt-search',
+    });
+    this.searchInput.addEventListener('input', () => {
+      this.keyword = this.searchInput.value.trim().toLowerCase();
+      this.renderAvailableList();
+    });
+
+    const body = contentEl.createDiv({ cls: 'pgt-manage-body' });
+
+    this.selectedPane = body.createDiv({ cls: 'pgt-manage-pane' });
+    this.availablePane = body.createDiv({ cls: 'pgt-manage-pane' });
+
+    this.selectedPane.createEl('h3', { text: '分组内插件条目' });
+    this.selectedCounterEl = this.selectedPane.createDiv({ cls: 'pgt-count' });
+    this.selectedListEl = this.selectedPane.createDiv({ cls: 'pgt-list pgt-manage-list' });
+
+    const selectedToolbar = this.selectedPane.createDiv({ cls: 'pgt-toolbar' });
+    this.createToolbarButton(selectedToolbar, '按名称排序', () => {
+      this.orderedPluginIds.sort((a, b) =>
+        this.plugin.getPluginDisplayName(a).localeCompare(this.plugin.getPluginDisplayName(b), 'zh-Hans-CN')
+      );
+      this.renderSelectedList();
+    });
+    this.createToolbarButton(selectedToolbar, '清空分组', () => {
+      this.selectedIds.clear();
+      this.orderedPluginIds = [];
+      this.renderAll();
+    });
+
+    this.availablePane.createEl('h3', { text: '可添加插件' });
+    this.availableCounterEl = this.availablePane.createDiv({ cls: 'pgt-count' });
+    this.availableListEl = this.availablePane.createDiv({ cls: 'pgt-list pgt-manage-list' });
+
+    const availableToolbar = this.availablePane.createDiv({ cls: 'pgt-toolbar' });
+    this.createToolbarButton(availableToolbar, '添加当前结果', () => {
+      for (const item of this.getFilteredAvailablePlugins()) {
+        this.addPlugin(item.id);
+      }
+      this.renderAll();
+    });
+
+    this.actionBar = contentEl.createDiv({ cls: 'pgt-actions' });
+    const cancelButton = this.actionBar.createEl('button', { text: '取消' });
+    const saveButton = this.actionBar.createEl('button', { text: '保存修改', cls: 'mod-cta' });
+
+    cancelButton.addEventListener('click', () => this.close());
+    saveButton.addEventListener('click', async () => {
+      const newName = this.nameInput.value.trim();
+      if (!newName) {
+        new Notice('请输入分组名称');
+        return;
+      }
+      if (!this.orderedPluginIds.length) {
+        new Notice('分组内至少保留一个插件');
+        return;
+      }
+
+      const ok = await this.plugin.replaceGroup(this.originalGroupName, newName, this.orderedPluginIds);
+      if (!ok) return;
+
+      new Notice(`分组已更新：${newName}`);
+      this.originalGroupName = newName;
+      this.groupName = newName;
+      if (typeof this.onSaved === 'function') this.onSaved(newName);
+      this.close();
+    });
+
+    this.renderAll();
+    window.setTimeout(() => this.searchInput?.focus(), 50);
+  }
+
+  onClose() {
+    this.modalEl.removeClass('plugin-group-toggle-modal', 'pgt-manage-modal');
+    this.contentEl.empty();
+  }
+
+  createToolbarButton(container, text, onClick) {
+    const button = container.createEl('button', { text });
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  getFilteredAvailablePlugins() {
+    const selected = this.selectedIds;
+    return this.installedPlugins.filter((item) => {
+      if (selected.has(item.id)) return false;
+      const text = `${item.name} ${item.id}`.toLowerCase();
+      return !this.keyword || text.includes(this.keyword);
+    });
+  }
+
+  addPlugin(id) {
+    if (this.selectedIds.has(id)) return;
+    this.selectedIds.add(id);
+    this.orderedPluginIds.push(id);
+  }
+
+  removePlugin(id) {
+    this.selectedIds.delete(id);
+    this.orderedPluginIds = this.orderedPluginIds.filter((item) => item !== id);
+  }
+
+  movePlugin(id, direction) {
+    const index = this.orderedPluginIds.indexOf(id);
+    if (index < 0) return;
+
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= this.orderedPluginIds.length) return;
+
+    const next = Array.from(this.orderedPluginIds);
+    const temp = next[target];
+    next[target] = next[index];
+    next[index] = temp;
+    this.orderedPluginIds = next;
+  }
+
+  renderAll() {
+    this.renderSelectedList();
+    this.renderAvailableList();
+  }
+
+  renderSelectedList() {
+    this.selectedListEl.empty();
+    this.selectedCounterEl.setText(`当前共 ${this.orderedPluginIds.length} 个插件条目`);
+
+    if (!this.orderedPluginIds.length) {
+      this.selectedListEl.createDiv({ text: '当前分组为空', cls: 'pgt-empty' });
+      return;
+    }
+
+    this.orderedPluginIds.forEach((id, index) => {
+      const enabled = this.plugin.isPluginEnabled(id);
+      const isSelf = this.plugin.shouldSkipPlugin(id);
+      const exists = Boolean(this.app.plugins?.manifests?.[id]);
+      const row = this.selectedListEl.createDiv({ cls: 'pgt-item pgt-manage-item is-selected' });
+
+      const textWrap = row.createDiv({ cls: 'pgt-item-text' });
+      textWrap.createDiv({ text: `${index + 1}. ${this.plugin.getPluginDisplayName(id)}`, cls: 'pgt-item-name' });
+
+      const metaParts = [id];
+      if (!exists) metaParts.push('未安装');
+      else metaParts.push(enabled ? '当前已开启' : '当前已关闭');
+      if (isSelf) metaParts.push('当前插件');
+      textWrap.createDiv({ text: metaParts.join(' · '), cls: 'pgt-item-meta' });
+
+      const actions = row.createDiv({ cls: 'pgt-inline-actions' });
+      this.createMiniButton(actions, '↑', '上移', () => {
+        this.movePlugin(id, 'up');
+        this.renderSelectedList();
+      }, index === 0);
+      this.createMiniButton(actions, '↓', '下移', () => {
+        this.movePlugin(id, 'down');
+        this.renderSelectedList();
+      }, index === this.orderedPluginIds.length - 1);
+      this.createMiniButton(actions, '移除', '移除该插件', () => {
+        this.removePlugin(id);
+        this.renderAll();
+      }, false, 'is-danger');
+    });
+  }
+
+  renderAvailableList() {
+    const filtered = this.getFilteredAvailablePlugins();
+    this.availableListEl.empty();
+    this.availableCounterEl.setText(`当前可添加 ${filtered.length} 个插件`);
+
+    if (!filtered.length) {
+      this.availableListEl.createDiv({ text: '没有可添加的匹配插件', cls: 'pgt-empty' });
+      return;
+    }
+
+    for (const item of filtered) {
+      const enabled = this.plugin.isPluginEnabled(item.id);
+      const isSelf = this.plugin.shouldSkipPlugin(item.id);
+      const row = this.availableListEl.createDiv({ cls: 'pgt-item pgt-manage-item' });
+
+      const textWrap = row.createDiv({ cls: 'pgt-item-text' });
+      textWrap.createDiv({ text: item.name, cls: 'pgt-item-name' });
+      textWrap.createDiv({ text: `${item.id}${item.version ? ` · v${item.version}` : ''}`, cls: 'pgt-item-meta' });
+
+      const right = row.createDiv({ cls: 'pgt-inline-actions' });
+      const statusEl = right.createDiv({
+        cls: `pgt-item-status ${isSelf ? 'is-self' : enabled ? 'is-enabled' : 'is-disabled'}`,
+        text: isSelf ? '当前插件' : enabled ? '开启' : '关闭',
+      });
+      statusEl.setAttr('data-state', isSelf ? 'self' : enabled ? 'enabled' : 'disabled');
+
+      this.createMiniButton(right, '添加', '添加到分组', () => {
+        this.addPlugin(item.id);
+        this.renderAll();
+      }, false, 'mod-cta');
+    }
+  }
+
+  createMiniButton(container, text, title, onClick, disabled = false, extraCls = '') {
+    const button = new ButtonComponent(container)
+      .setButtonText(text)
+      .setTooltip(title)
+      .onClick(onClick);
+
+    if (extraCls) button.buttonEl.addClass(extraCls);
+    if (disabled) button.setDisabled(true);
+    return button;
+  }
+}
+
 class PluginGroupToggleSettingTab extends PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -887,6 +1176,7 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    containerEl.addClass('pgt-settings-tab');
 
     containerEl.createEl('h2', { text: '插件分组开关闭' });
 
@@ -956,12 +1246,21 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
     }
 
     for (const group of groups) {
+      const state = this.plugin.getGroupRuntimeState(group);
+      const descParts = [`${group.pluginIds.length} 个插件`, `命令：开关分组：${group.name}`, `状态：${state.text}`];
+
       new Setting(containerEl)
         .setName(group.name)
-        .setDesc(`${group.pluginIds.length} 个插件｜命令：开关分组：${group.name}`)
+        .setDesc(descParts.join('｜'))
+        .addButton((button) =>
+          button.setButtonText('管理条目').setCta().onClick(() => {
+            new GroupManageModal(this.app, this.plugin, group.name, () => this.display()).open();
+          })
+        )
         .addButton((button) =>
           button.setButtonText('开关').onClick(async () => {
             await this.plugin.toggleGroupByName(group.name);
+            this.display();
           })
         )
         .addButton((button) =>
