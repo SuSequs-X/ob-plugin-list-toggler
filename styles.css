@@ -1,508 +1,2348 @@
-/* =========================
-   插件分组开关闭 - 整体变量
-   ========================= */
+/* =========================================================
+   Plugin Group Tools - rebuilt complete CSS
+   整合本对话前面已确认的样式方向：
+   1. 管理分组页保持双栏宽面板
+   2. 顶部“分组名称 + 添加插件搜索”并排
+   3. 左栏“分组内插件条目”标题增强 + 工具栏强化
+   4. 左栏工具栏重点强化：按名称排序 / 清空分组
+   5. 右栏“可添加插件”标题增强 + 两列卡片展示
+   6. 右栏按钮强化 + emoji
+   7. 快速操作“关闭插件分组 / 开启插件分组”提供轻量 emoji 兜底
 
-.pgt-settings-tab,
-.plugin-group-toggle-modal {
-  --pgt-radius-xs: 8px;
-  --pgt-radius-sm: 10px;
-  --pgt-radius-md: 14px;
-  --pgt-radius-lg: 18px;
+   说明：
+   - “可添加插件排除本身插件”属于 JS 过滤逻辑，不属于 CSS 能力范围。
+   - 顶部搜索块并排展示依赖它紧跟在 .pgt-manage-name-wrap 后，
+     且外层块内存在搜索 input；若 DOM 结构不同，需要再定向微调。
+   ========================================================= */
 
-  --pgt-gap-xs: 6px;
-  --pgt-gap-sm: 10px;
-  --pgt-gap-md: 14px;
-  --pgt-gap-lg: 18px;
-  --pgt-gap-xl: 24px;
-
-  --pgt-border: 1px solid var(--background-modifier-border);
-  --pgt-border-hover: 1px solid var(--background-modifier-border-hover);
-
-  --pgt-bg-soft: var(--background-secondary);
-  --pgt-bg-card: color-mix(in srgb, var(--background-primary) 82%, var(--background-secondary) 18%);
-  --pgt-bg-card-hover: color-mix(in srgb, var(--background-secondary) 78%, var(--background-modifier-hover) 22%);
-  --pgt-bg-selected: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary) 90%);
-  --pgt-bg-pane: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
-  --pgt-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.06);
-  --pgt-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-
-  --pgt-text-muted: var(--text-muted);
-  --pgt-text-faint: var(--text-faint);
-  --pgt-text-normal: var(--text-normal);
-
-  --pgt-green-bg: color-mix(in srgb, #22c55e 16%, var(--background-primary) 84%);
-  --pgt-green-text: #16a34a;
-
-  --pgt-red-bg: color-mix(in srgb, #ef4444 16%, var(--background-primary) 84%);
-  --pgt-red-text: #dc2626;
-
-  --pgt-yellow-bg: color-mix(in srgb, #f59e0b 18%, var(--background-primary) 82%);
-  --pgt-yellow-text: #d97706;
-
-  --pgt-blue-bg: color-mix(in srgb, #3b82f6 14%, var(--background-primary) 86%);
-  --pgt-blue-text: #2563eb;
+/* =========================================================
+   1) 管理页主布局：左右双栏
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-body,
+.pgt-manage-modal-shell .pgt-manage-body {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr) !important;
+  gap: 24px !important;
+  margin-top: 16px !important;
+  align-items: start !important;
 }
 
-/* =========================
-   设置页整体
-   ========================= */
-
-.pgt-settings-tab {
-  padding: 18px 10px 30px;
-}
-
-.pgt-settings-tab > h2 {
-  margin: 0 0 18px;
-  font-size: 1.5em;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.pgt-settings-tab > h3 {
-  margin: 28px 0 12px;
-  padding-top: 10px;
-  border-top: var(--pgt-border);
-  font-size: 1.08em;
-  font-weight: 700;
-}
-
-.pgt-settings-tab .setting-item {
-  padding: 16px 14px;
-  margin: 0 0 12px;
-  border: var(--pgt-border);
-  border-radius: var(--pgt-radius-md);
-  background: var(--pgt-bg-card);
-  transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    transform 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.pgt-settings-tab .setting-item:hover {
-  border: var(--pgt-border-hover);
-  background: var(--pgt-bg-card-hover);
-  box-shadow: var(--pgt-shadow-sm);
-}
-
-.pgt-settings-tab .setting-item:first-of-type {
-  margin-top: 6px;
-}
-
-.pgt-settings-tab .setting-item-name {
-  font-size: 1.02em;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.pgt-settings-tab .setting-item-description {
-  margin-top: 6px;
-  color: var(--pgt-text-muted);
-  line-height: 1.6;
-  font-size: 0.92em;
-}
-
-.pgt-settings-tab .setting-item-control {
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.pgt-settings-tab .setting-item-control button {
-  border-radius: 10px;
-  padding: 7px 14px;
-  min-height: 34px;
-  font-size: 0.9em;
-  font-weight: 600;
-}
-
-/* =========================
-   Modal 整体
-   ========================= */
-
-.plugin-group-toggle-modal .modal {
-  border-radius: 20px;
-}
-
-.plugin-group-toggle-modal .modal-content,
-.plugin-group-toggle-modal .modal-content > .modal-content-inner,
-.plugin-group-toggle-modal .content {
-  overflow: visible;
-}
-
-.plugin-group-toggle-modal .modal-content {
-  padding: 0;
-}
-
-.plugin-group-toggle-modal .modal-close-button {
-  top: 14px;
-  right: 14px;
-  border-radius: 10px;
-}
-
-.plugin-group-toggle-modal .modal-close-button:hover {
-  background: var(--background-modifier-hover);
-}
-
-.plugin-group-toggle-modal .modal-content > *,
-.plugin-group-toggle-modal .content > * {
+/* =========================================================
+   2) 面板基础：恢复明显双分区面板感
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane,
+.pgt-manage-modal-shell .pgt-manage-pane {
+  min-width: 0;
+  padding: 18px 20px 16px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset !important;
   box-sizing: border-box;
 }
 
-.plugin-group-toggle-modal .content,
-.plugin-group-toggle-modal .modal-content {
-  padding: 22px 22px 18px;
+.pgt-manage-modal .pgt-manage-pane:first-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child {
+  border-color: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-modifier-border)) !important;
 }
 
-.plugin-group-toggle-modal h2 {
-  margin: 0 0 12px;
-  padding-right: 34px;
-  font-size: 1.35em;
-  font-weight: 750;
+.pgt-manage-modal .pgt-manage-pane:last-child,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child {
+  border-color: color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+}
+
+/* =========================================================
+   3) 面板标题：分组内插件条目 / 可添加插件 增加 emoji
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane > h3,
+.pgt-manage-modal-shell .pgt-manage-pane > h3 {
+  margin: 0 0 10px !important;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 1em;
+  font-weight: 720;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 0.48em;
   letter-spacing: 0.01em;
 }
 
-.plugin-group-toggle-modal h3 {
-  margin: 0 0 10px;
-  font-size: 1em;
+.pgt-manage-modal .pgt-manage-pane:first-child > h3::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > h3::before {
+  content: "🧩";
+  line-height: 1;
+  transform: translateY(-0.5px);
+  opacity: 0.96;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child > h3::before,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child > h3::before {
+  content: "✨";
+  line-height: 1;
+  transform: translateY(-0.5px);
+  opacity: 0.94;
+}
+
+.pgt-manage-modal .pgt-manage-pane > .pgt-count,
+.pgt-manage-modal-shell .pgt-manage-pane > .pgt-count {
+  margin: 10px 0 8px !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane > .pgt-toolbar,
+.pgt-manage-modal-shell .pgt-manage-pane > .pgt-toolbar {
+  margin: 0 0 12px !important;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+/* =========================================================
+   4) 顶部：分组名称 + 添加插件搜索 并排
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-name-wrap,
+.pgt-manage-modal-shell .pgt-manage-name-wrap,
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[type="search"]),
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]),
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[type="search"]),
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]) {
+  display: inline-block;
+  vertical-align: top;
+  width: calc(50% - 10px);
+  margin: 0 20px 14px 0 !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%) !important;
+  box-sizing: border-box;
+}
+
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[type="search"]),
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]),
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[type="search"]),
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]) {
+  margin-right: 0 !important;
+}
+
+.pgt-manage-modal .pgt-manage-label,
+.pgt-manage-modal-shell .pgt-manage-label {
+  margin-bottom: 2px;
+  font-size: 0.86em;
+  font-weight: 650;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.42em;
+}
+
+.pgt-manage-modal .pgt-manage-label::before,
+.pgt-manage-modal-shell .pgt-manage-label::before {
+  content: "🏷️";
+  line-height: 1;
+  transform: translateY(-0.5px);
+  opacity: 0.88;
+}
+
+.pgt-manage-modal .pgt-manage-name-wrap input,
+.pgt-manage-modal .pgt-manage-name-wrap textarea,
+.pgt-manage-modal .pgt-manage-name-wrap select,
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[type="search"]) input,
+.pgt-manage-modal .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]) input,
+.pgt-manage-modal-shell .pgt-manage-name-wrap input,
+.pgt-manage-modal-shell .pgt-manage-name-wrap textarea,
+.pgt-manage-modal-shell .pgt-manage-name-wrap select,
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[type="search"]) input,
+.pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]) input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   5) 列表基础：滚动与留白
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-list,
+.pgt-manage-modal-shell .pgt-manage-list {
+  max-height: 60vh;
+  overflow: auto;
+  overflow-x: hidden !important;
+  padding: 6px 2px 4px !important;
+}
+
+/* =========================================================
+   6) 左栏：分组内插件条目列表基础卡片
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-manage-list,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-manage-item,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-manage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 14px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--background-modifier-border)) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-primary) 96%) !important;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-manage-item.is-selected,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-manage-item.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 34%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary) 93%) !important;
+}
+
+/* =========================================================
+   7) 左栏：工具栏重做（按名称排序 + 清空分组）
+   假设顶部工具栏第一项是排序，最后一项是清空。
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px 0 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 28%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-primary) 92%) !important;
+  font-size: 0.86em;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 100ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  overflow: hidden;
 }
 
-.pgt-desc {
-  margin-bottom: 16px;
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:hover,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary) 88%) !important;
+  border-color: color-mix(in srgb, var(--interactive-accent) 42%, var(--background-modifier-border)) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 16px rgba(0,0,0,0.07);
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:active,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:active,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:active,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:active {
+  transform: translateY(0.5px);
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:first-child::before,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:first-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child::before {
+  content: "🔤";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55em;
+  height: 1.55em;
+  border-radius: 0.55em;
+  font-size: 1.02em;
+  line-height: 1;
+  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary) 78%);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 42%, var(--background-modifier-border));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:last-child,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:last-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%) !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:last-child:hover,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:last-child:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child:hover {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 50%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 14%, var(--background-primary) 86%) !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:last-child::before,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:last-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child::before {
+  content: "🧹";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55em;
+  height: 1.55em;
+  border-radius: 0.55em;
+  font-size: 1.02em;
+  line-height: 1;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 20%, var(--background-primary) 80%);
+  border: 1px solid color-mix(in srgb, var(--color-red, #d85b5b) 42%, var(--background-modifier-border));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* =========================================================
+   8) 通用条目文字
+   ========================================================= */
+.pgt-manage-modal .pgt-item-text,
+.pgt-manage-modal-shell .pgt-item-text {
+  width: 100%;
+  min-width: 0;
+}
+
+.pgt-manage-modal .pgt-item-name,
+.pgt-manage-modal-shell .pgt-item-name {
+  font-size: 0.97em;
+  font-weight: 680;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.pgt-manage-modal .pgt-item-meta,
+.pgt-manage-modal-shell .pgt-item-meta {
+  margin-top: 4px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* =========================================================
+   9) 左栏条目操作区：保持分层，但不强调 emoji
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-inline-actions,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-left: 0;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-inline-actions button,
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-inline-actions .mod-cta,
+.pgt-manage-modal .pgt-manage-pane:first-child .pgt-inline-actions .clickable-icon,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-inline-actions button,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-inline-actions .mod-cta,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child .pgt-inline-actions .clickable-icon {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 24%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary) 94%) !important;
+}
+
+/* =========================================================
+   10) 右栏：可添加插件 -> 一行两个插件展示
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-list,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+  align-items: start;
+  padding: 8px 2px 4px !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-item,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-item {
+  min-height: 118px;
+  height: 100%;
+  padding: 12px 12px 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 4%, var(--background-primary) 96%) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: transform 100ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-item:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-item:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--text-accent) 34%, var(--background-modifier-border)) !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-item-name,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-item-name {
+  font-size: 0.95em;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-item-meta,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-item-meta {
+  font-size: 0.82em;
+  line-height: 1.45;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* =========================================================
+   11) 右栏 CTA 按钮：强化 + emoji
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 12px 0 38px !important;
+  border-radius: 10px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 28%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 9%, var(--background-primary) 91%) !important;
+  font-size: 0.84em;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 100ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button:hover,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta:hover {
+  background: color-mix(in srgb, var(--text-accent) 13%, var(--background-primary) 87%) !important;
+  border-color: color-mix(in srgb, var(--text-accent) 42%, var(--background-modifier-border)) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 16px rgba(0,0,0,0.07);
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button:active,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta:active,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button:active,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta:active {
+  transform: translateY(0.5px);
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button::before,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta::before,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button::before,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta::before {
+  content: "➕";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 0.5em;
+  font-size: 1.02em;
+  line-height: 1;
+  background: color-mix(in srgb, var(--text-accent) 24%, var(--background-primary) 76%);
+  border: 1px solid color-mix(in srgb, var(--text-accent) 42%, var(--background-modifier-border));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* 图标按钮排除，避免 emoji 污染 */
+.pgt-manage-modal .pgt-inline-actions .clickable-icon::before,
+.pgt-manage-modal-shell .pgt-inline-actions .clickable-icon::before,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .clickable-icon::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .clickable-icon::before {
+  content: none !important;
+}
+
+/* =========================================================
+   12) 快速操作：开启 / 关闭插件分组 emoji 兜底
+   依赖 class 或 aria-label/title 命中
+   ========================================================= */
+.pgt-qa-close-group,
+.pgt-qa-open-group,
+button[aria-label*="关闭插件分组"],
+button[title*="关闭插件分组"],
+button[aria-label*="开启插件分组"],
+button[title*="开启插件分组"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.pgt-qa-close-group::before,
+button[aria-label*="关闭插件分组"]::before,
+button[title*="关闭插件分组"]::before {
+  content: "🔻";
+}
+
+.pgt-qa-open-group::before,
+button[aria-label*="开启插件分组"]::before,
+button[title*="开启插件分组"]::before {
+  content: "🟢";
+}
+
+/* =========================================================
+   13) 响应式回退
+   ========================================================= */
+@media (max-width: 1120px) {
+  .pgt-manage-modal .pgt-manage-body,
+  .pgt-manage-modal-shell .pgt-manage-body {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .pgt-manage-modal .pgt-manage-name-wrap,
+  .pgt-manage-modal .pgt-manage-name-wrap + div:has(input[type="search"]),
+  .pgt-manage-modal .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]),
+  .pgt-manage-modal-shell .pgt-manage-name-wrap,
+  .pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[type="search"]),
+  .pgt-manage-modal-shell .pgt-manage-name-wrap + div:has(input[placeholder*="搜"]) {
+    display: block;
+    width: 100%;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-list,
+  .pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button,
+  .pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta,
+  .pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button,
+  .pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta,
+  .pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button,
+  .pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta,
+  .pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button,
+  .pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta {
+    min-height: 30px;
+    height: 30px;
+    font-size: 0.81em;
+  }
+}
+
+/* =========================================================
+   14) 管理分组：按钮 emoji 增强（最终整合版）
+   说明：
+   - 仅作用于管理分组相关界面，避免误伤其他页面按钮
+   - “可添加插件”排除本插件自己，必须在 JS 里过滤，CSS 无法完成
+   ========================================================= */
+
+/* A. 快速操作 / 管理分组里的“开启/启用”类按钮增强 */
+.pgt-manage-modal .pgt-qa-open-group,
+.pgt-manage-modal-shell .pgt-qa-open-group,
+.pgt-manage-modal button[aria-label*="开启"],
+.pgt-manage-modal button[title*="开启"],
+.pgt-manage-modal button[aria-label*="启用"],
+.pgt-manage-modal button[title*="启用"],
+.pgt-manage-modal-shell button[aria-label*="开启"],
+.pgt-manage-modal-shell button[title*="开启"],
+.pgt-manage-modal-shell button[aria-label*="启用"],
+.pgt-manage-modal-shell button[title*="启用"],
+.pgt-manage-modal .mod-cta[aria-label*="开启"],
+.pgt-manage-modal .mod-cta[title*="开启"],
+.pgt-manage-modal .mod-cta[aria-label*="启用"],
+.pgt-manage-modal .mod-cta[title*="启用"],
+.pgt-manage-modal-shell .mod-cta[aria-label*="开启"],
+.pgt-manage-modal-shell .mod-cta[title*="开启"],
+.pgt-manage-modal-shell .mod-cta[aria-label*="启用"],
+.pgt-manage-modal-shell .mod-cta[title*="启用"] {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px 0 42px !important;
+  border-radius: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--color-green, #4caf50) 38%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%) !important;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pgt-manage-modal .pgt-qa-open-group::before,
+.pgt-manage-modal-shell .pgt-qa-open-group::before,
+.pgt-manage-modal button[aria-label*="开启"]::before,
+.pgt-manage-modal button[title*="开启"]::before,
+.pgt-manage-modal button[aria-label*="启用"]::before,
+.pgt-manage-modal button[title*="启用"]::before,
+.pgt-manage-modal-shell button[aria-label*="开启"]::before,
+.pgt-manage-modal-shell button[title*="开启"]::before,
+.pgt-manage-modal-shell button[aria-label*="启用"]::before,
+.pgt-manage-modal-shell button[title*="启用"]::before,
+.pgt-manage-modal .mod-cta[aria-label*="开启"]::before,
+.pgt-manage-modal .mod-cta[title*="开启"]::before,
+.pgt-manage-modal .mod-cta[aria-label*="启用"]::before,
+.pgt-manage-modal .mod-cta[title*="启用"]::before,
+.pgt-manage-modal-shell .mod-cta[aria-label*="开启"]::before,
+.pgt-manage-modal-shell .mod-cta[title*="开启"]::before,
+.pgt-manage-modal-shell .mod-cta[aria-label*="启用"]::before,
+.pgt-manage-modal-shell .mod-cta[title*="启用"]::before {
+  content: "🟢";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 0.56em;
+  font-size: 1.02em;
+  line-height: 1;
+  background: color-mix(in srgb, var(--color-green, #4caf50) 26%, var(--background-primary) 74%);
+  border: 1px solid color-mix(in srgb, var(--color-green, #4caf50) 48%, var(--background-modifier-border));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.pgt-manage-modal .pgt-qa-open-group:hover,
+.pgt-manage-modal-shell .pgt-qa-open-group:hover,
+.pgt-manage-modal button[aria-label*="开启"]:hover,
+.pgt-manage-modal button[title*="开启"]:hover,
+.pgt-manage-modal button[aria-label*="启用"]:hover,
+.pgt-manage-modal button[title*="启用"]:hover,
+.pgt-manage-modal-shell button[aria-label*="开启"]:hover,
+.pgt-manage-modal-shell button[title*="开启"]:hover,
+.pgt-manage-modal-shell button[aria-label*="启用"]:hover,
+.pgt-manage-modal-shell button[title*="启用"]:hover,
+.pgt-manage-modal .mod-cta[aria-label*="开启"]:hover,
+.pgt-manage-modal .mod-cta[title*="开启"]:hover,
+.pgt-manage-modal .mod-cta[aria-label*="启用"]:hover,
+.pgt-manage-modal .mod-cta[title*="启用"]:hover,
+.pgt-manage-modal-shell .mod-cta[aria-label*="开启"]:hover,
+.pgt-manage-modal-shell .mod-cta[title*="开启"]:hover,
+.pgt-manage-modal-shell .mod-cta[aria-label*="启用"]:hover,
+.pgt-manage-modal-shell .mod-cta[title*="启用"]:hover {
+  background: color-mix(in srgb, var(--color-green, #4caf50) 16%, var(--background-primary) 84%) !important;
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 52%, var(--background-modifier-border)) !important;
+}
+
+/* B. 左栏工具栏按钮：按名称排序 / 清空分组 */
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  align-items: center;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px 0 40px !important;
+  border-radius: 12px !important;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:first-child,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:first-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child {
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary) 90%) !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:first-child::before,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:first-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:first-child::before {
+  content: "🔤";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55em;
+  height: 1.55em;
+  border-radius: 0.55em;
+  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary) 78%);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 42%, var(--background-modifier-border));
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:last-child,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:last-child,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child {
+  border: 1px solid color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 12%, var(--background-primary) 88%) !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar button:last-child::before,
+.pgt-manage-modal .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar button:last-child::before,
+.pgt-manage-modal-shell .pgt-manage-pane:first-child > .pgt-toolbar .mod-cta:last-child::before {
+  content: "🧹";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55em;
+  height: 1.55em;
+  border-radius: 0.55em;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 20%, var(--background-primary) 80%);
+  border: 1px solid color-mix(in srgb, var(--color-red, #d85b5b) 42%, var(--background-modifier-border));
+}
+
+/* C. 右栏“可添加插件”：两列卡片 + CTA 按钮强化 + emoji */
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-list,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+  align-items: start;
+  padding: 8px 2px 4px !important;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-item,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-item {
+  min-height: 118px;
+  height: 100%;
+  padding: 12px 12px 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 4%, var(--background-primary) 96%) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: transform 100ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-manage-item:hover,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-manage-item:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--text-accent) 34%, var(--background-modifier-border)) !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 12px 0 38px !important;
+  border-radius: 10px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 30%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 10%, var(--background-primary) 90%) !important;
+  font-size: 0.84em;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 2px 8px rgba(0,0,0,0.04);
+}
+
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions button::before,
+.pgt-manage-modal .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta::before,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions button::before,
+.pgt-manage-modal-shell .pgt-manage-pane:last-child .pgt-inline-actions .mod-cta::before {
+  content: "➕";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 0.5em;
+  background: color-mix(in srgb, var(--text-accent) 24%, var(--background-primary) 76%);
+  border: 1px solid color-mix(in srgb, var(--text-accent) 42%, var(--background-modifier-border));
+}
+
+.pgt-manage-modal .pgt-inline-actions .clickable-icon::before,
+.pgt-manage-modal-shell .pgt-inline-actions .clickable-icon::before {
+  content: none !important;
+}
+
+
+/* =========================================================
+   15) 批量开启 / 关闭插件分组：专项美化
+   目标：
+   - 去掉重复 emoji 后，改由样式统一补图标
+   - 批量分组弹窗使用双列卡片展示
+   - 开启 / 关闭模式使用不同强调色
+   ========================================================= */
+
+.pgt-group-action-modal-shell .modal,
+.pgt-group-action-modal {
+  width: min(1120px, 94vw) !important;
+  max-width: min(1120px, 94vw) !important;
+}
+
+.pgt-group-action-modal {
+  padding-top: 4px;
+}
+
+.pgt-group-action-modal h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 0 12px !important;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 1.18em;
+  font-weight: 760;
+  line-height: 1.3;
+}
+
+.pgt-group-action-modal.is-enable-mode h2::before {
+  content: "🟢";
+}
+
+.pgt-group-action-modal.is-disable-mode h2::before {
+  content: "🔻";
+}
+
+.pgt-group-action-desc {
+  margin: 0 0 14px;
   padding: 12px 14px;
-  border-radius: var(--pgt-radius-md);
-  background: var(--pgt-bg-soft);
-  color: var(--pgt-text-muted);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background-primary) 90%, var(--background-secondary) 10%);
+  color: var(--text-muted);
   line-height: 1.65;
-  font-size: 0.92em;
 }
 
-/* =========================
-   输入区 / 搜索框
-   ========================= */
+.pgt-group-action-modal.is-enable-mode .pgt-group-action-desc {
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 26%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green, #4caf50) 5%, var(--background-primary) 95%);
+}
 
-.pgt-search,
-.pgt-group-name {
+.pgt-group-action-modal.is-disable-mode .pgt-group-action-desc {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 24%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 5%, var(--background-primary) 95%);
+}
+
+.pgt-group-action-modal .pgt-search {
   width: 100%;
   min-height: 40px;
-  padding: 10px 12px;
-  border: var(--pgt-border);
+  padding: 0 14px;
+  margin: 0 0 12px;
   border-radius: 12px;
-  background: var(--background-primary);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-  transition:
-    border-color 140ms ease,
-    box-shadow 140ms ease,
-    background 140ms ease;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+  box-sizing: border-box;
 }
 
-.pgt-search:focus,
-.pgt-group-name:focus {
-  outline: none;
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 18%, transparent);
-}
-
-.pgt-group-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 12px 0 4px;
-}
-
-/* =========================
-   工具条 / 操作条
-   ========================= */
-
-.pgt-toolbar {
+.pgt-group-action-modal .pgt-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 10px;
+  gap: 10px;
+  margin: 0 0 12px !important;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--background-modifier-border);
 }
 
-.pgt-toolbar button,
-.pgt-actions button {
-  border-radius: 10px;
-  min-height: 34px;
-  padding: 7px 14px;
-  font-weight: 600;
+.pgt-group-action-modal .pgt-count {
+  margin: 0 0 12px !important;
+  color: var(--text-muted);
+  font-size: 0.9em;
 }
 
-.pgt-actions {
+.pgt-group-action-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px !important;
+  max-height: 56vh;
+  overflow: auto;
+  padding: 2px 2px 4px !important;
+}
+
+.pgt-group-action-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  min-height: 96px;
+  padding: 14px 14px 12px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+  transition: transform 100ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.pgt-group-action-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+}
+
+.pgt-group-action-item.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 36%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary) 93%) !important;
+}
+
+.pgt-group-action-item input[type="checkbox"] {
+  margin-top: 4px;
+}
+
+.pgt-group-action-item .pgt-item-text {
+  min-width: 0;
+}
+
+.pgt-group-action-item .pgt-item-name {
+  font-size: 0.98em;
+  font-weight: 720;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.pgt-group-action-item .pgt-item-meta {
+  margin-top: 0;
+  color: var(--text-muted);
+  font-size: 0.86em;
+  line-height: 1.55;
+}
+
+.pgt-group-action-item .pgt-item-status {
+  justify-self: end;
+  align-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+}
+
+.pgt-group-action-item .pgt-item-status.is-enabled {
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
+}
+
+.pgt-group-action-item .pgt-item-status.is-disabled {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 12%, var(--background-primary) 88%);
+}
+
+.pgt-group-action-item .pgt-item-status.is-mixed {
+  border-color: color-mix(in srgb, var(--color-orange, #d9a441) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-orange, #d9a441) 12%, var(--background-primary) 88%);
+}
+
+.pgt-group-action-item .pgt-item-status.is-self {
+  border-color: color-mix(in srgb, var(--text-muted) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-muted) 10%, var(--background-primary) 90%);
+}
+
+.pgt-group-action-modal .pgt-actions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 16px;
   padding-top: 14px;
-  border-top: var(--pgt-border);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
-.pgt-count {
-  margin: 2px 0 10px;
-  color: var(--pgt-text-muted);
-  font-size: 0.88em;
-  line-height: 1.5;
+.pgt-group-action-modal .pgt-toolbar button,
+.pgt-group-action-modal .pgt-actions button {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px 0 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 3px 10px rgba(0,0,0,0.04);
+  font-size: 0.86em;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 100ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
-/* =========================
-   列表区
-   ========================= */
+.pgt-group-action-modal .pgt-toolbar button:hover,
+.pgt-group-action-modal .pgt-actions button:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 16px rgba(0,0,0,0.07);
+}
 
-.pgt-list {
+.pgt-group-action-modal .pgt-toolbar button:active,
+.pgt-group-action-modal .pgt-actions button:active {
+  transform: translateY(0.5px);
+}
+
+.pgt-group-action-modal .pgt-toolbar button::before,
+.pgt-group-action-modal .pgt-actions button::before {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 0.5em;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-secondary) 60%, var(--background-primary) 40%);
+}
+
+.pgt-group-action-modal .pgt-btn-select-all::before {
+  content: "☑️";
+}
+
+.pgt-group-action-modal .pgt-btn-clear-selection::before {
+  content: "🧹";
+}
+
+.pgt-group-action-modal .pgt-btn-run-enable {
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 34%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%) !important;
+}
+
+.pgt-group-action-modal .pgt-btn-run-enable::before {
+  content: "🟢";
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 42%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green, #4caf50) 24%, var(--background-primary) 76%);
+}
+
+.pgt-group-action-modal .pgt-btn-run-disable {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 12%, var(--background-primary) 88%) !important;
+}
+
+.pgt-group-action-modal .pgt-btn-run-disable::before {
+  content: "🔻";
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 42%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 22%, var(--background-primary) 78%);
+}
+
+@media (max-width: 980px) {
+  .pgt-group-action-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   14) 打开插件选择器：独立美化
+   ========================================================= */
+.pgt-selector-modal-shell .modal,
+.pgt-selector-modal {
+  width: min(1320px, 95vw) !important;
+  max-width: min(1320px, 95vw) !important;
+}
+
+.pgt-selector-modal {
+  padding: 8px 2px 4px;
+}
+
+.pgt-selector-modal h2 {
+  margin: 0 0 14px !important;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.48em;
+  font-size: 1.28em;
+  font-weight: 760;
+}
+
+.pgt-selector-modal h2::before {
+  content: "🧰";
+}
+
+.pgt-selector-desc {
+  margin: 0 0 14px !important;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--background-modifier-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary) 94%);
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+.pgt-selector-search-wrap {
+  margin-bottom: 12px;
+}
+
+.pgt-selector-modal .pgt-selector-search,
+.pgt-selector-modal .pgt-search {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.pgt-selector-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  max-height: 420px;
+  margin-bottom: 10px;
+}
+
+.pgt-selector-count {
+  margin: 0 0 12px !important;
+  color: var(--text-muted);
+}
+
+.pgt-selector-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 58vh;
   overflow: auto;
   padding: 4px 2px 6px;
 }
 
-.pgt-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.pgt-list::-webkit-scrollbar-thumb {
-  background: var(--background-modifier-border);
-  border-radius: 999px;
-}
-
-.pgt-empty {
-  padding: 18px 14px;
-  border: 1px dashed var(--background-modifier-border);
-  border-radius: var(--pgt-radius-md);
-  color: var(--pgt-text-muted);
-  text-align: center;
-  background: color-mix(in srgb, var(--background-secondary) 75%, transparent);
-}
-
-.pgt-item {
-  display: flex;
-  align-items: center;
+.pgt-selector-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 12px;
-  padding: 12px 13px;
-  border: var(--pgt-border);
-  border-radius: var(--pgt-radius-md);
-  background: var(--pgt-bg-card);
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    border-color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease;
+  align-items: center;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background-secondary) 74%, var(--background-primary) 26%);
+  transition: transform 100ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.pgt-item:hover {
-  border: var(--pgt-border-hover);
-  background: var(--pgt-bg-card-hover);
+.pgt-selector-item:hover {
   transform: translateY(-1px);
-  box-shadow: var(--pgt-shadow-sm);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.06);
 }
 
-.pgt-item.is-selected {
-  background: var(--pgt-bg-selected);
-  border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--background-modifier-border));
+.pgt-selector-item.is-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 38%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-primary) 92%);
 }
 
-.pgt-item input[type="checkbox"] {
+.pgt-selector-item.is-self-item {
+  opacity: 0.8;
+}
+
+.pgt-selector-item input[type="checkbox"] {
   margin: 0;
-  flex: 0 0 auto;
 }
 
-.pgt-item-text {
+.pgt-selector-item .pgt-item-text {
   min-width: 0;
-  flex: 1 1 auto;
 }
 
-.pgt-item-name {
+.pgt-selector-item .pgt-item-name {
   font-size: 0.97em;
-  font-weight: 650;
-  line-height: 1.45;
-  color: var(--pgt-text-normal);
-  word-break: break-word;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.pgt-item-meta {
+.pgt-selector-item .pgt-item-meta {
   margin-top: 4px;
-  font-size: 0.84em;
-  line-height: 1.55;
-  color: var(--pgt-text-muted);
-  word-break: break-all;
+  font-size: 0.82em;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
-.pgt-item-status {
-  flex: 0 0 auto;
+.pgt-selector-item .pgt-item-status {
+  justify-self: end;
+  min-width: 68px;
+  text-align: center;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 0.8em;
   font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  border: 1px solid transparent;
+  border: 1px solid var(--background-modifier-border);
 }
 
-.pgt-item-status.is-enabled {
-  background: var(--pgt-green-bg);
-  color: var(--pgt-green-text);
-  border-color: color-mix(in srgb, #22c55e 24%, transparent);
+.pgt-selector-item .pgt-item-status.is-enabled {
+  color: var(--color-green, #4caf50);
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
 }
 
-.pgt-item-status.is-disabled {
-  background: var(--pgt-red-bg);
-  color: var(--pgt-red-text);
-  border-color: color-mix(in srgb, #ef4444 24%, transparent);
+.pgt-selector-item .pgt-item-status.is-disabled {
+  color: var(--color-red, #d85b5b);
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
 }
 
-.pgt-item-status.is-mixed {
-  background: var(--pgt-yellow-bg);
-  color: var(--pgt-yellow-text);
-  border-color: color-mix(in srgb, #f59e0b 24%, transparent);
+.pgt-selector-item .pgt-item-status.is-self {
+  color: var(--text-accent);
+  background: color-mix(in srgb, var(--text-accent) 10%, var(--background-primary) 90%);
 }
 
-.pgt-item-status.is-self {
-  background: var(--pgt-blue-bg);
-  color: var(--pgt-blue-text);
-  border-color: color-mix(in srgb, #3b82f6 24%, transparent);
-}
-
-.pgt-item.is-self-item {
-  opacity: 0.88;
-}
-
-/* =========================
-   分组管理 Modal
-   ========================= */
-
-.pgt-manage-modal .modal-content,
-.pgt-manage-modal .content {
-  max-width: 1100px;
-  width: min(1100px, 92vw);
-}
-
-.pgt-manage-name-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.pgt-manage-label {
-  font-size: 0.88em;
-  font-weight: 650;
-  color: var(--pgt-text-muted);
-}
-
-.pgt-manage-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
-  margin-top: 10px;
-}
-
-.pgt-manage-pane {
-  min-width: 0;
-  padding: 16px;
-  border: var(--pgt-border);
-  border-radius: var(--pgt-radius-lg);
-  background: var(--pgt-bg-pane);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-}
-
-.pgt-manage-list {
-  max-height: 420px;
-}
-
-.pgt-manage-item {
-  align-items: flex-start;
-}
-
-.pgt-inline-actions {
+.pgt-selector-actions {
+  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pgt-selector-modal .pgt-toolbar button,
+.pgt-selector-modal .pgt-actions button {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  margin-left: auto;
-  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px 0 40px;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 3px 10px rgba(0,0,0,0.04);
 }
 
-.pgt-inline-actions .clickable-icon,
-.pgt-inline-actions button,
-.pgt-inline-actions .mod-cta {
-  border-radius: 10px;
+.pgt-selector-modal .pgt-toolbar button::before,
+.pgt-selector-modal .pgt-actions button::before {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-.pgt-inline-actions button {
-  min-height: 30px;
-  padding: 5px 10px;
-  font-size: 0.84em;
-  font-weight: 600;
+.pgt-selector-modal .pgt-btn-select-all::before { content: "☑️"; }
+.pgt-selector-modal .pgt-btn-clear-selection::before { content: "🧹"; }
+.pgt-selector-modal .pgt-btn-disable-selected::before { content: "🔴"; }
+.pgt-selector-modal .pgt-btn-enable-selected::before { content: "🟢"; }
+.pgt-selector-modal .pgt-btn-save-selection::before { content: "📦"; }
+
+/* =========================================================
+   15) 管理分组：显式类覆盖，修复“添加插件搜索”列表展示
+   ========================================================= */
+.pgt-manage-modal .pgt-manage-name-block,
+.pgt-manage-modal-shell .pgt-manage-name-block,
+.pgt-manage-modal .pgt-manage-search-block,
+.pgt-manage-modal-shell .pgt-manage-search-block {
+  display: inline-block;
+  vertical-align: top;
+  width: calc(50% - 10px);
+  box-sizing: border-box;
 }
 
-.pgt-inline-actions .is-danger {
-  color: var(--text-error);
+.pgt-manage-modal .pgt-manage-search-block,
+.pgt-manage-modal-shell .pgt-manage-search-block {
+  margin-right: 0 !important;
 }
 
-.pgt-inline-actions .is-danger:hover {
-  background: color-mix(in srgb, var(--text-error) 10%, transparent);
+.pgt-manage-modal .pgt-pane-selected .pgt-selected-list,
+.pgt-manage-modal-shell .pgt-pane-selected .pgt-selected-list {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* =========================
-   Setting 页中的分组卡片按钮优化
-   ========================= */
-
-.pgt-settings-tab .setting-item .mod-warning,
-.pgt-settings-tab .setting-item button.mod-warning {
-  border-radius: 10px;
+.pgt-manage-modal .pgt-pane-available .pgt-available-list,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-available-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+  align-items: start;
+  max-height: 60vh;
+  overflow: auto;
 }
 
-.pgt-settings-tab .setting-item button.mod-cta {
+.pgt-manage-modal .pgt-pane-available .pgt-available-item,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-available-item {
+  min-height: 118px;
+  height: 100%;
+  padding: 12px 12px 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 4%, var(--background-primary) 96%) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pgt-manage-modal .pgt-pane-available .pgt-available-item:hover,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-available-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+}
+
+.pgt-manage-modal .pgt-pane-available .pgt-inline-actions,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-inline-actions {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pgt-manage-modal .pgt-pane-available .pgt-item-status,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-item-status {
+  min-width: 52px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.78em;
   font-weight: 700;
 }
 
-/* =========================
-   小屏适配
-   ========================= */
+.pgt-manage-modal .pgt-pane-available .pgt-item-status.is-enabled,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-item-status.is-enabled {
+  color: var(--color-green, #4caf50);
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
+}
 
-@media (max-width: 900px) {
-  .pgt-manage-body {
-    grid-template-columns: 1fr;
-  }
+.pgt-manage-modal .pgt-pane-available .pgt-item-status.is-disabled,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-item-status.is-disabled {
+  color: var(--color-red, #d85b5b);
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
+}
 
-  .pgt-manage-modal .modal-content,
-  .pgt-manage-modal .content {
-    width: min(96vw, 900px);
+.pgt-manage-modal .pgt-pane-available .pgt-mini-btn,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-mini-btn {
+  position: relative;
+  min-height: 32px;
+  padding: 0 12px 0 38px !important;
+  border-radius: 10px !important;
+}
+
+.pgt-manage-modal .pgt-pane-available .pgt-btn-add::before,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-btn-add::before {
+  content: "➕";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 1180px) {
+  .pgt-selector-list,
+  .pgt-manage-modal .pgt-pane-available .pgt-available-list,
+  .pgt-manage-modal-shell .pgt-pane-available .pgt-available-list {
+    grid-template-columns: 1fr !important;
   }
 }
 
-@media (max-width: 680px) {
-  .plugin-group-toggle-modal .content,
-  .plugin-group-toggle-modal .modal-content {
-    padding: 18px 16px 16px;
+
+/* =========================================================
+   v4 修复：管理分组中的“可添加插件”列表稳定展示
+   机制：使用显式 list-wrap，避免旧规则与 DOM 顺序耦合
+   ========================================================= */
+.pgt-manage-modal .pgt-pane-selected,
+.pgt-manage-modal .pgt-pane-available,
+.pgt-manage-modal-shell .pgt-pane-selected,
+.pgt-manage-modal-shell .pgt-pane-available {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pgt-manage-modal .pgt-manage-list-wrap,
+.pgt-manage-modal-shell .pgt-manage-list-wrap {
+  min-height: 160px;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.pgt-manage-modal .pgt-manage-list-wrap.is-empty,
+.pgt-manage-modal-shell .pgt-manage-list-wrap.is-empty {
+  min-height: 120px;
+}
+
+.pgt-manage-modal .pgt-selected-list-wrap .pgt-selected-list,
+.pgt-manage-modal-shell .pgt-selected-list-wrap .pgt-selected-list {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.pgt-manage-modal .pgt-available-list-wrap,
+.pgt-manage-modal-shell .pgt-available-list-wrap {
+  margin-top: 2px;
+}
+
+.pgt-manage-modal .pgt-available-list-wrap .pgt-available-list,
+.pgt-manage-modal-shell .pgt-available-list-wrap .pgt-available-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+  align-items: start;
+  min-height: 120px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px 2px 4px !important;
+}
+
+.pgt-manage-modal .pgt-available-toolbar,
+.pgt-manage-modal-shell .pgt-available-toolbar,
+.pgt-manage-modal .pgt-selected-toolbar,
+.pgt-manage-modal-shell .pgt-selected-toolbar {
+  margin-bottom: 10px !important;
+}
+
+.pgt-manage-modal .pgt-available-list .pgt-empty,
+.pgt-manage-modal-shell .pgt-available-list .pgt-empty,
+.pgt-manage-modal .pgt-selected-list .pgt-empty,
+.pgt-manage-modal-shell .pgt-selected-list .pgt-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 14px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--background-secondary) 70%, var(--background-primary) 30%);
+}
+
+@media (max-width: 1180px) {
+  .pgt-manage-modal .pgt-available-list-wrap .pgt-available-list,
+  .pgt-manage-modal-shell .pgt-available-list-wrap .pgt-available-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   14) 已保存分组：卡片化展示与插件预览
+   ========================================================= */
+.pgt-settings-tab .pgt-saved-groups-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.pgt-settings-tab .pgt-saved-group-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pgt-settings-tab .pgt-saved-group-card[data-state="enabled"] {
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 26%, var(--background-modifier-border));
+}
+
+.pgt-settings-tab .pgt-saved-group-card[data-state="disabled"] {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 24%, var(--background-modifier-border));
+}
+
+.pgt-settings-tab .pgt-saved-group-card[data-state="mixed"] {
+  border-color: color-mix(in srgb, var(--interactive-accent) 28%, var(--background-modifier-border));
+}
+
+.pgt-settings-tab .pgt-saved-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pgt-settings-tab .pgt-saved-group-name {
+  font-size: 1.02em;
+  font-weight: 750;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.pgt-settings-tab .pgt-saved-group-state {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 84%, var(--background-secondary) 16%);
+}
+
+.pgt-settings-tab .pgt-saved-group-state[data-state="enabled"] {
+  color: var(--color-green, #4caf50);
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
+}
+
+.pgt-settings-tab .pgt-saved-group-state[data-state="disabled"] {
+  color: var(--color-red, #d85b5b);
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 38%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
+}
+
+.pgt-settings-tab .pgt-saved-group-state[data-state="mixed"] {
+  color: var(--interactive-accent);
+  border-color: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary) 90%);
+}
+
+.pgt-settings-tab .pgt-saved-group-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pgt-settings-tab .pgt-saved-group-meta-item {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  line-height: 1.2;
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 84%, var(--background-secondary) 16%);
+}
+
+.pgt-settings-tab .pgt-saved-group-meta-item.is-empty {
+  color: var(--text-warning);
+}
+
+.pgt-settings-tab .pgt-saved-group-command {
+  font-size: 0.82em;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.pgt-settings-tab .pgt-saved-group-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.pgt-settings-tab .pgt-saved-group-empty {
+  color: var(--text-muted);
+  font-size: 0.86em;
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%);
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip.is-more {
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip-name {
+  font-size: 0.83em;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip-state {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.72em;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary) 12%);
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip-state[data-state="enabled"] {
+  color: var(--color-green, #4caf50);
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 36%, var(--background-modifier-border));
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip-state[data-state="disabled"] {
+  color: var(--color-red, #d85b5b);
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border));
+}
+
+.pgt-settings-tab .pgt-saved-plugin-chip-state[data-state="missing"] {
+  color: var(--text-warning);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.pgt-settings-tab .pgt-saved-group-actions button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px 0 38px;
+  border-radius: 11px;
+  font-size: 0.84em;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions button::before {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 0.5em;
+  font-size: 1em;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions .pgt-btn-manage-group {
+  border-color: color-mix(in srgb, var(--interactive-accent) 28%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary) 90%);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions .pgt-btn-manage-group::before {
+  content: "🧩";
+  border-color: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary) 78%);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions .pgt-btn-toggle-group::before {
+  content: "🔁";
+}
+
+.pgt-settings-tab .pgt-saved-group-actions .pgt-btn-delete-group {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
+}
+
+.pgt-settings-tab .pgt-saved-group-actions .pgt-btn-delete-group::before {
+  content: "🗑️";
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 42%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 18%, var(--background-primary) 82%);
+}
+
+@media (max-width: 820px) {
+  .pgt-settings-tab .pgt-saved-groups-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   v6 重构：管理条目弹窗显式双栏结构
+   目标：左栏稳定显示“已在分组中”的插件，右栏稳定显示“可添加插件”
+   ========================================================= */
+.pgt-manage-modal.pgt-manage-root,
+.pgt-manage-modal .pgt-manage-root,
+.pgt-manage-modal-shell .pgt-manage-root {
+  display: block;
+}
+
+.pgt-manage-modal .pgt-manage-top-grid,
+.pgt-manage-modal-shell .pgt-manage-top-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.pgt-manage-modal .pgt-manage-block,
+.pgt-manage-modal-shell .pgt-manage-block {
+  min-width: 0;
+  padding: 14px 16px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%) !important;
+}
+
+.pgt-manage-modal .pgt-manage-panels,
+.pgt-manage-modal-shell .pgt-manage-panels {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr) !important;
+  gap: 20px !important;
+  align-items: start !important;
+}
+
+.pgt-manage-modal .pgt-manage-panel,
+.pgt-manage-modal-shell .pgt-manage-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 16px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset !important;
+}
+
+.pgt-manage-modal .pgt-pane-selected,
+.pgt-manage-modal-shell .pgt-pane-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-modifier-border)) !important;
+}
+
+.pgt-manage-modal .pgt-pane-available,
+.pgt-manage-modal-shell .pgt-pane-available {
+  border-color: color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+}
+
+.pgt-manage-modal .pgt-manage-panel-head,
+.pgt-manage-modal-shell .pgt-manage-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pgt-manage-modal .pgt-manage-panel-title,
+.pgt-manage-modal-shell .pgt-manage-panel-title {
+  font-size: 1em;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.pgt-manage-modal .pgt-pane-selected .pgt-manage-panel-title::before,
+.pgt-manage-modal-shell .pgt-pane-selected .pgt-manage-panel-title::before {
+  content: "🧩 ";
+}
+
+.pgt-manage-modal .pgt-pane-available .pgt-manage-panel-title::before,
+.pgt-manage-modal-shell .pgt-pane-available .pgt-manage-panel-title::before {
+  content: "✨ ";
+}
+
+.pgt-manage-modal .pgt-manage-panel-count,
+.pgt-manage-modal-shell .pgt-manage-panel-count {
+  color: var(--text-muted);
+  font-size: 0.84em;
+  white-space: nowrap;
+}
+
+.pgt-manage-modal .pgt-manage-toolbar,
+.pgt-manage-modal-shell .pgt-manage-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.pgt-manage-modal .pgt-manage-list-wrap,
+.pgt-manage-modal-shell .pgt-manage-list-wrap {
+  min-height: 220px;
+  flex: 1 1 auto;
+}
+
+.pgt-manage-modal .pgt-selected-list,
+.pgt-manage-modal-shell .pgt-selected-list {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 2px !important;
+}
+
+.pgt-manage-modal .pgt-available-list,
+.pgt-manage-modal-shell .pgt-available-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+  min-height: 180px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 2px !important;
+}
+
+.pgt-manage-modal .pgt-selected-item,
+.pgt-manage-modal-shell .pgt-selected-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--background-modifier-border)) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-primary) 96%) !important;
+}
+
+.pgt-manage-modal .pgt-available-item,
+.pgt-manage-modal-shell .pgt-available-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 118px;
+  padding: 12px 12px 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--text-accent) 4%, var(--background-primary) 96%) !important;
+}
+
+.pgt-manage-modal .pgt-selected-item-status-row,
+.pgt-manage-modal-shell .pgt-selected-item-status-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pgt-manage-modal .pgt-selected-actions,
+.pgt-manage-modal-shell .pgt-selected-actions,
+.pgt-manage-modal .pgt-available-actions,
+.pgt-manage-modal-shell .pgt-available-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+}
+
+.pgt-manage-modal .pgt-available-actions,
+.pgt-manage-modal-shell .pgt-available-actions {
+  justify-content: space-between;
+}
+
+.pgt-manage-modal .pgt-item-status,
+.pgt-manage-modal-shell .pgt-item-status {
+  min-width: 52px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 700;
+}
+
+.pgt-manage-modal .pgt-item-status.is-enabled,
+.pgt-manage-modal-shell .pgt-item-status.is-enabled {
+  color: var(--color-green, #4caf50);
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
+}
+
+.pgt-manage-modal .pgt-item-status.is-disabled,
+.pgt-manage-modal-shell .pgt-item-status.is-disabled {
+  color: var(--color-red, #d85b5b);
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
+}
+
+.pgt-manage-modal .pgt-mini-btn,
+.pgt-manage-modal-shell .pgt-mini-btn,
+.pgt-manage-modal .pgt-manage-toolbar .pgt-btn,
+.pgt-manage-modal-shell .pgt-manage-toolbar .pgt-btn {
+  position: relative;
+  min-height: 32px;
+  padding: 0 12px 0 38px !important;
+  border-radius: 10px !important;
+}
+
+.pgt-manage-modal .pgt-btn-sort::before,
+.pgt-manage-modal-shell .pgt-btn-sort::before { content: "🔤"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+.pgt-manage-modal .pgt-btn-clear::before,
+.pgt-manage-modal-shell .pgt-btn-clear::before { content: "🧹"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+.pgt-manage-modal .pgt-btn-add-all::before,
+.pgt-manage-modal-shell .pgt-btn-add-all::before,
+.pgt-manage-modal .pgt-btn-add::before,
+.pgt-manage-modal-shell .pgt-btn-add::before { content: "➕"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+.pgt-manage-modal .pgt-btn-move-up::before,
+.pgt-manage-modal-shell .pgt-btn-move-up::before { content: "⬆️"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+.pgt-manage-modal .pgt-btn-move-down::before,
+.pgt-manage-modal-shell .pgt-btn-move-down::before { content: "⬇️"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+.pgt-manage-modal .pgt-btn-remove::before,
+.pgt-manage-modal-shell .pgt-btn-remove::before { content: "🗑️"; position:absolute; left:10px; top:50%; transform:translateY(-50%); }
+
+.pgt-manage-modal .pgt-selected-list .pgt-empty,
+.pgt-manage-modal-shell .pgt-selected-list .pgt-empty,
+.pgt-manage-modal .pgt-available-list .pgt-empty,
+.pgt-manage-modal-shell .pgt-available-list .pgt-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 14px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--background-secondary) 70%, var(--background-primary) 30%);
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .pgt-manage-modal .pgt-manage-top-grid,
+  .pgt-manage-modal-shell .pgt-manage-top-grid,
+  .pgt-manage-modal .pgt-manage-panels,
+  .pgt-manage-modal-shell .pgt-manage-panels {
+    grid-template-columns: 1fr !important;
+  }
+  .pgt-manage-modal .pgt-available-list,
+  .pgt-manage-modal-shell .pgt-available-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+
+/* =========================================================
+   v7 修复：管理条目弹窗独立结构，避免旧规则叠加导致空白
+   ========================================================= */
+.pgt-gm2-root {
+  display: block;
+}
+
+.pgt-gm2-top {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.pgt-gm2-block {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%);
+}
+
+.pgt-gm2-label {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.86em;
+  font-weight: 650;
+}
+
+.pgt-gm2-label::before {
+  content: "🏷️ ";
+}
+
+.pgt-gm2-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.pgt-gm2-pane {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+}
+
+.pgt-gm2-pane-selected {
+  border-color: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-modifier-border));
+}
+
+.pgt-gm2-pane-available {
+  border-color: color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border));
+}
+
+.pgt-gm2-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pgt-gm2-pane-title {
+  font-size: 1em;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.pgt-gm2-pane-selected .pgt-gm2-pane-title::before {
+  content: "🧩 ";
+}
+
+.pgt-gm2-pane-available .pgt-gm2-pane-title::before {
+  content: "✨ ";
+}
+
+.pgt-gm2-pane-count {
+  color: var(--text-muted);
+  font-size: 0.84em;
+  white-space: nowrap;
+}
+
+.pgt-gm2-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.pgt-gm2-list {
+  min-height: 200px;
+}
+
+.pgt-gm2-selected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 2px;
+}
+
+.pgt-gm2-available-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 2px;
+}
+
+.pgt-gm2-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 14px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--background-secondary) 72%, var(--background-primary) 28%);
+  padding: 16px;
+}
+
+.pgt-gm2-item {
+  min-width: 0;
+  border-radius: 14px;
+}
+
+.pgt-gm2-selected-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-primary) 96%);
+}
+
+.pgt-gm2-available-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 118px;
+  padding: 12px 12px 10px;
+  border: 1px solid color-mix(in srgb, var(--text-accent) 18%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-accent) 4%, var(--background-primary) 96%);
+}
+
+.pgt-gm2-item-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+}
+
+.pgt-gm2-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pgt-gm2-actions {
+  margin-top: 16px;
+}
+
+.pgt-gm2-btn-mini,
+.pgt-gm2-toolbar .pgt-btn,
+.pgt-gm2-actions .pgt-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px 0 38px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 88%, var(--background-secondary) 12%);
+  font-size: 0.84em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pgt-gm2-btn-mini::before,
+.pgt-gm2-toolbar .pgt-btn::before,
+.pgt-gm2-actions .pgt-btn::before {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 0.5em;
+  font-size: 1em;
+  line-height: 1;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-secondary) 84%, var(--background-primary) 16%);
+}
+
+.pgt-gm2-btn-sort::before { content: "🔤"; }
+.pgt-gm2-btn-clear::before { content: "🧹"; }
+.pgt-gm2-btn-add-all::before,
+.pgt-gm2-btn-add::before { content: "➕"; }
+.pgt-gm2-btn-move-up::before { content: "⬆️"; }
+.pgt-gm2-btn-move-down::before { content: "⬇️"; }
+.pgt-gm2-btn-remove::before { content: "🗑️"; }
+.pgt-gm2-btn-save::before { content: "💾"; }
+.pgt-gm2-btn-cancel::before { content: "↩️"; }
+
+.pgt-gm2-btn-add-all,
+.pgt-gm2-btn-add,
+.pgt-gm2-btn-save {
+  border-color: color-mix(in srgb, var(--color-green, #4caf50) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green, #4caf50) 12%, var(--background-primary) 88%);
+}
+
+.pgt-gm2-btn-remove,
+.pgt-gm2-btn-clear {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 34%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 10%, var(--background-primary) 90%);
+}
+
+@media (max-width: 1180px) {
+  .pgt-gm2-available-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .pgt-gm2-top,
+  .pgt-gm2-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   v8: 管理条目弹窗补强
+   目标：
+   1. 右栏为空时给出明确原因，不再像“没渲染”
+   2. 左栏删除插件按钮 / 删除整个分组按钮更醒目
+   3. 左右列表保持最小高度，避免视觉空白误判
+   ========================================================= */
+.pgt-gm2-selected-list,
+.pgt-gm2-available-list {
+  min-height: 240px;
+}
+
+.pgt-gm2-available-empty::before {
+  content: "📦";
+  display: block;
+  font-size: 1.35em;
+  margin-bottom: 8px;
+}
+
+.pgt-gm2-btn-delete-plugin,
+.pgt-gm2-btn-delete-group,
+.pgt-gm2-btn-remove {
+  border-color: color-mix(in srgb, var(--color-red, #d85b5b) 40%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--color-red, #d85b5b) 13%, var(--background-primary) 87%) !important;
+}
+
+.pgt-gm2-btn-delete-plugin::before,
+.pgt-gm2-btn-remove::before {
+  content: "🗑️" !important;
+}
+
+.pgt-gm2-btn-delete-group::before {
+  content: "🧨" !important;
+}
+
+.pgt-gm2-btn-delete-group {
+  margin-left: auto;
+}
+
+.pgt-gm2-selected-item .pgt-gm2-actions-inline {
+  justify-content: flex-end;
+}
+
+.pgt-gm2-selected-item .pgt-gm2-actions-inline .pgt-mini-btn {
+  min-width: 96px;
+}
+
+.pgt-gm2-pane-count {
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .pgt-gm2-btn-delete-group {
+    margin-left: 0;
+  }
+}
+
+/* =========================================================
+   v10: 管理条目弹窗右上角操作区优化
+   目标：取消 / 保存修改按钮固定到右上角，不遮挡标题与输入区
+   ========================================================= */
+.pgt-gm2-root {
+  position: relative;
+  padding-top: 4px;
+}
+
+.pgt-gm2-title {
+  margin: 0 0 16px !important;
+  padding-right: 260px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+}
+
+.pgt-gm2-actions {
+  position: absolute;
+  top: 70px;
+  right: 0;
+  margin-top: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  z-index: 5;
+}
+
+.pgt-gm2-actions .pgt-btn {
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px 0 40px;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 3px 10px rgba(0,0,0,0.05);
+}
+
+.pgt-gm2-btn-cancel {
+  border-color: color-mix(in srgb, var(--background-modifier-border) 88%, var(--text-muted)) !important;
+  background: color-mix(in srgb, var(--background-primary) 86%, var(--background-secondary) 14%) !important;
+}
+
+.pgt-gm2-btn-save {
+  border-color: color-mix(in srgb, var(--interactive-accent) 36%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-primary) 86%) !important;
+}
+
+.pgt-gm2-btn-cancel:hover,
+.pgt-gm2-btn-save:hover {
+  transform: translateY(-0.5px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 6px 16px rgba(0,0,0,0.07);
+}
+
+@media (max-width: 900px) {
+  .pgt-gm2-title {
+    padding-right: 0;
+    min-height: auto;
   }
 
-  .pgt-item {
-    align-items: flex-start;
-  }
-
-  .pgt-item-status {
-    align-self: flex-start;
-  }
-
-  .pgt-actions {
-    justify-content: stretch;
-  }
-
-  .pgt-actions button {
-    flex: 1 1 auto;
-  }
-
-  .pgt-settings-tab {
-    padding: 12px 4px 24px;
-  }
-
-  .pgt-settings-tab .setting-item {
-    padding: 14px 12px;
+  .pgt-gm2-actions {
+    position: static;
+    margin: 0 0 14px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 }
