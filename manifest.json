@@ -1,10 +1,10 @@
 {
   "id": "plugin-list-toggler",
-  "name": "plugin-list-toggler",
-  "version": "0.1.0",
+  "name": "插件场景开关",
+  "version": "0.2.0",
   "minAppVersion": "1.5.0",
-  "description": "Pick installed community plugins from a modal, save them as groups, and register each group as direct commands.",
+  "description": "Save community-plugin sets as scenes and expose each scene as a direct, state-aware toggle command for shortcuts.",
   "author": "SuSequs-X",
-  "authorUrl": "https://github.com/SuSequs-X/ob-plugin-list-toggler",
+  "authorUrl": "https://github.com/SuSequs-X",
   "isDesktopOnly": false
 }

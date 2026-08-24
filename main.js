@@ -47,7 +47,10 @@ class PluginGroupTogglePlugin extends Plugin {
 
     try {
       await this.loadSettings();
-      this.normalizeGroups();
+      const groupsMigrated = this.normalizeGroups();
+      if (groupsMigrated) {
+        await this.saveSettings();
+      }
 
       this.addCommand({
         id: 'open-plugin-selector',
@@ -57,10 +60,10 @@ class PluginGroupTogglePlugin extends Plugin {
 
       this.addCommand({
         id: 'disable-plugin-groups',
-        name: '关闭插件分组',
+        name: '批量关闭场景',
         callback: () => {
           if (!this.getGroups().length) {
-            new Notice('当前还没有插件分组');
+            new Notice('当前还没有插件场景');
             return;
           }
           new GroupMultiActionModal(this.app, this, 'disable').open();
@@ -69,17 +72,29 @@ class PluginGroupTogglePlugin extends Plugin {
 
       this.addCommand({
         id: 'enable-plugin-groups',
-        name: '开启插件分组',
+        name: '批量开启场景',
         callback: () => {
           if (!this.getGroups().length) {
-            new Notice('当前还没有插件分组');
+            new Notice('当前还没有插件场景');
             return;
           }
           new GroupMultiActionModal(this.app, this, 'enable').open();
         },
       });
 
-      this.addRibbonIcon('boxes', '插件分组开关闭：弹出插件选择器', () => {
+      this.addCommand({
+        id: 'manage-saved-groups',
+        name: '已保存场景管理',
+        callback: () => {
+          if (!this.getGroups().length) {
+            new Notice('当前还没有插件场景');
+            return;
+          }
+          this.openPluginSettingsTab();
+        },
+      });
+
+      this.addRibbonIcon('boxes', '插件场景开关：弹出插件选择器', () => {
         new PluginSelectorModal(this.app, this).open();
       });
 
@@ -98,20 +113,72 @@ class PluginGroupTogglePlugin extends Plugin {
 
   async loadSettings() {
     const data = await this.loadData();
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, data || {});
+    const persisted = data && typeof data === 'object' ? data : {};
+
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, persisted, {
+      refreshAfterGroupAction:
+        persisted.refreshAfterGroupAction ??
+        persisted.autoRefreshAfterGroupAction ??
+        DEFAULT_SETTINGS.refreshAfterGroupAction,
+    });
+
+    delete this.settings.autoRefreshAfterGroupAction;
     if (!Array.isArray(this.settings.groups)) this.settings.groups = [];
   }
 
   async saveSettings() {
-    await this.saveData(this.settings);
+    const persisted = Object.assign({}, this.settings);
+    delete persisted.autoRefreshAfterGroupAction;
+    await this.saveData(persisted);
+  }
+
+  openPluginSettingsTab() {
+    try {
+      if (typeof this.app.setting?.open === 'function') {
+        this.app.setting.open();
+      }
+      if (typeof this.app.setting?.openTabById === 'function') {
+        this.app.setting.openTabById(this.manifest.id);
+        return true;
+      }
+    } catch (error) {
+      console.error('[plugin-group-toggle] openPluginSettingsTab failed:', error);
+    }
+
+    new Notice('无法打开插件设置页，请手动进入本插件设置');
+    return false;
   }
 
   getGroups() {
     return Array.isArray(this.settings.groups) ? this.settings.groups : [];
   }
 
+  makeSceneId(seed) {
+    const input = String(seed || 'scene');
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `scene-${(hash >>> 0).toString(36)}`;
+  }
+
+  ensureUniqueSceneId(preferredId, name, usedIds) {
+    const base = String(preferredId || '').trim() || this.makeSceneId(name);
+    let candidate = base;
+    let index = 2;
+    while (usedIds.has(candidate)) {
+      candidate = `${base}-${index}`;
+      index += 1;
+    }
+    usedIds.add(candidate);
+    return candidate;
+  }
+
   normalizeGroups() {
+    const before = JSON.stringify(this.getGroups());
     const map = new Map();
+    const usedIds = new Set();
 
     for (const rawGroup of this.getGroups()) {
       const name = String(rawGroup?.name || '').trim();
@@ -120,12 +187,22 @@ class PluginGroupTogglePlugin extends Plugin {
       );
 
       if (!name || !pluginIds.length) continue;
-      map.set(name, { name, pluginIds });
+
+      const existing = map.get(name);
+      if (existing) {
+        existing.pluginIds = Array.from(new Set([...existing.pluginIds, ...pluginIds]));
+        continue;
+      }
+
+      const sceneId = this.ensureUniqueSceneId(rawGroup?.sceneId, name, usedIds);
+      map.set(name, { sceneId, name, pluginIds });
     }
 
     this.settings.groups = Array.from(map.values()).sort((a, b) =>
       a.name.localeCompare(b.name, 'zh-Hans-CN')
     );
+
+    return before !== JSON.stringify(this.settings.groups);
   }
 
   getGroupByName(name) {
@@ -245,7 +322,7 @@ class PluginGroupTogglePlugin extends Plugin {
     const ids = this.getProcessablePluginIds(pluginIds);
     if (!ids.length) {
       if (!options.silentEmpty) new Notice('没有可处理的插件');
-      return { summary: null, details: [] };
+      return { summary: null, details: [], changed: 0, skipped: 0, failed: 0 };
     }
 
     let changed = 0;
@@ -273,7 +350,7 @@ class PluginGroupTogglePlugin extends Plugin {
     if (!options.suppressNotice) {
       this.showSummaryNotice(summary, details);
     }
-    return { summary, details };
+    return { summary, details, changed, skipped, failed };
   }
 
   getProcessablePluginIds(pluginIds) {
@@ -355,7 +432,7 @@ class PluginGroupTogglePlugin extends Plugin {
 
     return {
       key: 'mixed',
-      text: '混合',
+      text: '部分开启',
       enabledCount,
       disabledCount,
       skippedCount,
@@ -363,64 +440,44 @@ class PluginGroupTogglePlugin extends Plugin {
     };
   }
 
-  async togglePluginsIndividually(pluginIds, options = {}) {
-    const ids = this.getProcessablePluginIds(pluginIds);
-    if (!ids.length) {
-      if (!options.silentEmpty) new Notice('没有可处理的插件');
-      return { summary: null, details: [] };
-    }
-
-    let changed = 0;
-    let skipped = 0;
-    let failed = 0;
-    const details = [];
-
-    for (const id of ids) {
-      const current = this.isPluginEnabled(id);
-      const pluginName = this.getPluginDisplayName(id);
-      const result = await this.setPluginState(id, !current);
-
-      if (result.status === 'changed') {
-        changed += 1;
-        details.push(`${current ? '关闭' : '开启'}：${pluginName}`);
-      } else if (result.status === 'failed') {
-        failed += 1;
-        details.push(`失败：${pluginName} -> ${result.reason}`);
-      } else {
-        skipped += 1;
-        details.push(`跳过：${pluginName} -> ${result.reason}`);
-      }
-    }
-
-    const summary = `分组开关完成：变更 ${changed} / 跳过 ${skipped} / 失败 ${failed}`;
-    if (!options.suppressNotice) {
-      this.showSummaryNotice(summary, details);
-    }
-    return { summary, details };
-  }
 
   async runGroupByName(name, enable) {
     const group = this.getGroupByName(name);
     if (!group) {
-      new Notice(`分组不存在：${name}`);
-      return { summary: null, details: [] };
+      new Notice(`场景不存在：${name}`);
+      return { summary: null, details: [], changed: 0, skipped: 0, failed: 0 };
     }
 
     const result = await this.applyPluginState(group.pluginIds, enable);
-    await this.afterGroupAction();
+    if (result.changed > 0) await this.afterGroupAction();
     return result;
   }
 
   async toggleGroupByName(name) {
     const group = this.getGroupByName(name);
     if (!group) {
-      new Notice(`分组不存在：${name}`);
-      return { summary: null, details: [] };
+      new Notice(`场景不存在：${name}`);
+      return { summary: null, details: [], changed: 0, skipped: 0, failed: 0 };
     }
 
-    const result = await this.togglePluginsIndividually(group.pluginIds);
-    await this.afterGroupAction();
-    return result;
+    const state = this.getGroupRuntimeState(group);
+    if (state.key === 'empty') {
+      new Notice(`场景“${name}”没有可处理的已安装插件`);
+      return { summary: null, details: [], changed: 0, skipped: state.skippedCount, failed: 0 };
+    }
+
+    // 场景开关采用整体收敛语义：
+    // - 全部已开启 -> 整体关闭
+    // - 关闭或部分开启 -> 整体开启
+    // 避免逐个反转导致“混合状态”被反向混合。
+    const enable = state.key !== 'enabled';
+    const result = await this.applyPluginState(group.pluginIds, enable, { suppressNotice: true });
+    const action = enable ? '开启' : '关闭';
+    const summary = `场景“${name}”${action}完成：变更 ${result.changed} / 跳过 ${result.skipped} / 失败 ${result.failed}`;
+    this.showSummaryNotice(summary, result.details);
+
+    if (result.changed > 0) await this.afterGroupAction();
+    return Object.assign({}, result, { summary, action, targetEnabled: enable });
   }
 
   async afterGroupAction() {
@@ -448,11 +505,6 @@ class PluginGroupTogglePlugin extends Plugin {
     }
   }
 
-  sanitizeCommandIdPart(text) {
-    const encoded = encodeURIComponent(String(text || '').trim());
-    return encoded || 'group';
-  }
-
   unregisterGroupCommands() {
     const commands = this.app.commands;
     for (const fullId of this.registeredGroupCommandIds || []) {
@@ -470,13 +522,13 @@ class PluginGroupTogglePlugin extends Plugin {
     this.normalizeGroups();
 
     const groups = this.getGroups();
-    groups.forEach((group, index) => {
-      const suffix = `${String(index + 1).padStart(3, '0')}-${this.sanitizeCommandIdPart(group.name)}`;
-      const localId = `toggle-group-${suffix}`;
+    groups.forEach((group) => {
+      // 快捷键绑定依赖稳定命令 ID：改名、排序都不改变 sceneId。
+      const localId = `toggle-scene-${group.sceneId}`;
 
       this.addCommand({
         id: localId,
-        name: `开关分组：${group.name}`,
+        name: `场景开关：${group.name}`,
         callback: async () => {
           await this.toggleGroupByName(group.name);
         },
@@ -491,18 +543,22 @@ class PluginGroupTogglePlugin extends Plugin {
     const ids = Array.from(new Set((pluginIds || []).map((id) => String(id).trim()).filter(Boolean)));
 
     if (!trimmedName) {
-      new Notice('分组名称不能为空');
+      new Notice('场景名称不能为空');
       return false;
     }
 
     if (!ids.length) {
-      new Notice('分组内没有插件');
+      new Notice('场景内没有插件');
       return false;
     }
 
     const groups = this.getGroups();
     const existingIndex = groups.findIndex((group) => group.name === trimmedName);
-    const newGroup = { name: trimmedName, pluginIds: ids };
+    const existingSceneId = existingIndex >= 0 ? groups[existingIndex].sceneId : null;
+    const usedIds = new Set(groups.map((group) => group.sceneId).filter(Boolean));
+    if (existingSceneId) usedIds.delete(existingSceneId);
+    const sceneId = this.ensureUniqueSceneId(existingSceneId, trimmedName, usedIds);
+    const newGroup = { sceneId, name: trimmedName, pluginIds: ids };
 
     if (existingIndex >= 0) {
       groups[existingIndex] = newGroup;
@@ -523,34 +579,35 @@ class PluginGroupTogglePlugin extends Plugin {
     const ids = Array.from(new Set((pluginIds || []).map((id) => String(id).trim()).filter(Boolean)));
 
     if (!oldTrimmed) {
-      new Notice('原分组名称不能为空');
+      new Notice('原场景名称不能为空');
       return false;
     }
 
     if (!newTrimmed) {
-      new Notice('分组名称不能为空');
+      new Notice('场景名称不能为空');
       return false;
     }
 
     if (!ids.length) {
-      new Notice('分组内至少保留一个插件');
+      new Notice('场景内至少保留一个插件');
       return false;
     }
 
     const groups = this.getGroups();
     const targetIndex = groups.findIndex((group) => group.name === oldTrimmed);
     if (targetIndex < 0) {
-      new Notice(`分组不存在：${oldTrimmed}`);
+      new Notice(`场景不存在：${oldTrimmed}`);
       return false;
     }
 
     const duplicateIndex = groups.findIndex((group) => group.name === newTrimmed && group.name !== oldTrimmed);
     if (duplicateIndex >= 0) {
-      new Notice(`已存在同名分组：${newTrimmed}`);
+      new Notice(`已存在同名场景：${newTrimmed}`);
       return false;
     }
 
-    groups[targetIndex] = { name: newTrimmed, pluginIds: ids };
+    const sceneId = groups[targetIndex].sceneId || this.makeSceneId(oldTrimmed);
+    groups[targetIndex] = { sceneId, name: newTrimmed, pluginIds: ids };
     this.settings.groups = groups;
     this.normalizeGroups();
     await this.saveSettings();
@@ -601,7 +658,7 @@ class PluginSelectorModal extends Modal {
     contentEl.createEl('h2', { text: '打开插件选择器' });
 
     const desc = contentEl.createDiv({ cls: 'pgt-desc pgt-selector-desc' });
-    desc.setText('在这里快速检索社区插件，并批量关闭、启用或保存为分组。当前插件会自动跳过，不会被加入选择。');
+    desc.setText('在这里快速检索社区插件，并批量关闭、启用或保存为场景。当前插件会自动跳过，不会被加入选择。');
 
     const searchWrap = contentEl.createDiv({ cls: 'pgt-selector-search-wrap' });
     this.searchInput = searchWrap.createEl('input', {
@@ -635,7 +692,7 @@ class PluginSelectorModal extends Modal {
       this.close();
     }, 'pgt-btn-enable-selected');
 
-    this.addActionButton('保存为分组', false, async () => {
+    this.addActionButton('保存为场景', false, async () => {
       if (!this.selectedIds.size) {
         new Notice('请先选择插件');
         return;
@@ -644,7 +701,7 @@ class PluginSelectorModal extends Modal {
       new GroupNameModal(this.app, async (name) => {
         const ok = await this.plugin.upsertGroup(name, Array.from(this.selectedIds));
         if (ok) {
-          new Notice(`分组已保存：${name}`);
+          new Notice(`场景已保存：${name}`);
           this.close();
         }
       }).open();
@@ -790,16 +847,16 @@ class GroupMultiActionModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl('h2', { text: this.mode === 'enable' ? '开启插件分组' : '关闭插件分组' });
+    contentEl.createEl('h2', { text: this.mode === 'enable' ? '开启插件场景' : '关闭插件场景' });
 
     const desc = contentEl.createDiv({ cls: 'pgt-desc pgt-group-action-desc' });
     desc.setText(this.mode === 'enable'
-      ? '这里只展示当前完全处于关闭状态的分组。选中后可一键批量开启。'
-      : '这里只展示当前完全处于开启状态的分组。选中后可一键批量关闭。');
+      ? '这里只展示当前完全处于关闭状态的场景。选中后可一键批量开启。'
+      : '这里只展示当前完全处于开启状态的场景。选中后可一键批量关闭。');
 
     this.searchInput = contentEl.createEl('input', {
       type: 'text',
-      placeholder: '搜索分组名称…',
+      placeholder: '搜索场景名称…',
       cls: 'pgt-search',
     });
     this.searchInput.addEventListener('input', () => {
@@ -818,11 +875,11 @@ class GroupMultiActionModal extends Modal {
     this.listEl = contentEl.createDiv({ cls: 'pgt-list pgt-group-action-list' });
     this.actionBar = contentEl.createDiv({ cls: 'pgt-actions' });
 
-    const primaryText = this.mode === 'enable' ? '开启选中分组' : '关闭选中分组';
+    const primaryText = this.mode === 'enable' ? '开启选中场景' : '关闭选中场景';
     this.addActionButton(primaryText, true, async () => {
       const names = Array.from(this.selectedNames);
       if (!names.length) {
-        new Notice('请先选择分组');
+        new Notice('请先选择场景');
         return;
       }
 
@@ -839,7 +896,7 @@ class GroupMultiActionModal extends Modal {
 
       if (executed > 1) {
         this.plugin.showSummaryNotice(
-          `${this.mode === 'enable' ? '开启' : '关闭'}分组完成：共处理 ${executed} 个分组`,
+          `${this.mode === 'enable' ? '开启' : '关闭'}场景完成：共处理 ${executed} 个场景`,
           collectedDetails
         );
       }
@@ -913,14 +970,14 @@ class GroupMultiActionModal extends Modal {
     this.listEl.empty();
 
     const eligibleCount = this.getEligibleGroups().length;
-    this.counterEl.setText(`已选 ${this.selectedNames.size} 个 / 当前显示 ${filtered.length} 个 / 可操作 ${eligibleCount} 个分组`);
+    this.counterEl.setText(`已选 ${this.selectedNames.size} 个 / 当前显示 ${filtered.length} 个 / 可操作 ${eligibleCount} 个场景`);
 
     if (!filtered.length) {
       const emptyText = eligibleCount
-        ? '没有匹配到分组'
+        ? '没有匹配到场景'
         : this.mode === 'enable'
-          ? '当前没有处于关闭状态的分组'
-          : '当前没有处于开启状态的分组';
+          ? '当前没有处于关闭状态的场景'
+          : '当前没有处于开启状态的场景';
       this.listEl.createDiv({ text: emptyText, cls: 'pgt-empty' });
       return;
     }
@@ -984,14 +1041,14 @@ class GroupNameModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl('h2', { text: '保存为分组' });
+    contentEl.createEl('h2', { text: '保存为场景' });
 
     const row = contentEl.createDiv({ cls: 'pgt-group-row' });
-    row.createEl('span', { text: '分组名称' });
+    row.createEl('span', { text: '场景名称' });
 
     const input = row.createEl('input', {
       type: 'text',
-      placeholder: '输入分组名称',
+      placeholder: '输入场景名称',
       cls: 'pgt-group-name',
     });
 
@@ -999,13 +1056,13 @@ class GroupNameModal extends Modal {
     const cancelButton = actionBar.createEl('button', { text: '取消' });
     const saveButton = actionBar.createEl('button', { text: '保存', cls: 'mod-cta pgt-btn-save-group' });
     applyButtonMeta(cancelButton, { classes: ['pgt-btn-cancel'], tooltip: '取消' });
-    applyButtonMeta(saveButton, { classes: ['pgt-btn-save-group'], tooltip: '保存分组' });
+    applyButtonMeta(saveButton, { classes: ['pgt-btn-save-group'], tooltip: '保存场景' });
 
     cancelButton.addEventListener('click', () => this.close());
     saveButton.addEventListener('click', async () => {
       const name = input.value.trim();
       if (!name) {
-        new Notice('请输入分组名称');
+        new Notice('请输入场景名称');
         return;
       }
       await this.onSubmit(name);
@@ -1086,17 +1143,17 @@ class GroupManageModal extends Modal {
     contentEl.empty();
     contentEl.addClass('pgt-gm2-root');
 
-    const title = contentEl.createEl('h2', { text: `管理分组：${this.originalGroupName}` });
+    const title = contentEl.createEl('h2', { text: `管理场景：${this.originalGroupName}` });
     title.addClass('pgt-gm2-title');
 
     const topGrid = contentEl.createDiv({ cls: 'pgt-gm2-top' });
 
     const nameBlock = topGrid.createDiv({ cls: 'pgt-gm2-block pgt-gm2-name-block' });
-    nameBlock.createDiv({ text: '分组名称', cls: 'pgt-gm2-label' });
+    nameBlock.createDiv({ text: '场景名称', cls: 'pgt-gm2-label' });
     this.nameInput = nameBlock.createEl('input', {
       type: 'text',
       value: this.groupName,
-      placeholder: '输入分组名称',
+      placeholder: '输入场景名称',
       cls: 'pgt-group-name pgt-gm2-input',
     });
 
@@ -1104,7 +1161,7 @@ class GroupManageModal extends Modal {
     searchBlock.createDiv({ text: '添加插件搜索', cls: 'pgt-gm2-label' });
     this.searchInput = searchBlock.createEl('input', {
       type: 'text',
-      placeholder: '搜索可加入该分组的插件名称或 ID…',
+      placeholder: '搜索可加入该场景的插件名称或 ID…',
       cls: 'pgt-search pgt-gm2-input',
     });
     this.searchInput.addEventListener('input', () => {
@@ -1129,18 +1186,18 @@ class GroupManageModal extends Modal {
     saveButton.addEventListener('click', async () => {
       const newName = this.nameInput.value.trim();
       if (!newName) {
-        new Notice('请输入分组名称');
+        new Notice('请输入场景名称');
         return;
       }
       if (!this.orderedPluginIds.length) {
-        new Notice('分组内至少保留一个插件');
+        new Notice('场景内至少保留一个插件');
         return;
       }
 
       const ok = await this.plugin.replaceGroup(this.originalGroupName, newName, this.orderedPluginIds);
       if (!ok) return;
 
-      new Notice(`分组已更新：${newName}`);
+      new Notice(`场景已更新：${newName}`);
       this.originalGroupName = newName;
       this.groupName = newName;
       if (typeof this.onSaved === 'function') this.onSaved(newName);
@@ -1153,7 +1210,7 @@ class GroupManageModal extends Modal {
 
   buildSelectedPane() {
     const head = this.selectedPane.createDiv({ cls: 'pgt-gm2-pane-head' });
-    head.createDiv({ text: '分组内插件条目', cls: 'pgt-gm2-pane-title' });
+    head.createDiv({ text: '场景内插件条目', cls: 'pgt-gm2-pane-title' });
     this.selectedCounterEl = head.createDiv({ cls: 'pgt-gm2-pane-count' });
 
     this.selectedToolbar = this.selectedPane.createDiv({ cls: 'pgt-toolbar pgt-gm2-toolbar' });
@@ -1165,16 +1222,16 @@ class GroupManageModal extends Modal {
       this.renderSelectedList();
     }, 'pgt-gm2-btn-sort');
 
-    this.createToolbarButton(this.selectedToolbar, '清空分组', () => {
+    this.createToolbarButton(this.selectedToolbar, '清空场景', () => {
       this.orderedPluginIds = [];
       this.syncSelectedIds();
       this.renderAll();
     }, 'pgt-gm2-btn-clear');
 
-    this.createToolbarButton(this.selectedToolbar, '删除整个分组', async () => {
+    this.createToolbarButton(this.selectedToolbar, '删除整个场景', async () => {
       const ok = await this.plugin.deleteGroup(this.originalGroupName);
       if (ok) {
-        new Notice(`已删除分组：${this.originalGroupName}`);
+        new Notice(`已删除场景：${this.originalGroupName}`);
         if (typeof this.onSaved === 'function') this.onSaved('');
         this.close();
       }
@@ -1182,7 +1239,7 @@ class GroupManageModal extends Modal {
 
     this.selectedEmptyEl = this.selectedPane.createDiv({
       cls: 'pgt-gm2-empty pgt-gm2-selected-empty',
-      text: '当前分组为空，可从右侧添加插件。',
+      text: '当前场景为空，可从右侧添加插件。',
     });
     this.selectedListEl = this.selectedPane.createDiv({ cls: 'pgt-gm2-list pgt-gm2-selected-list' });
   }
@@ -1326,6 +1383,25 @@ class GroupManageModal extends Modal {
       statusEl.setAttr('data-state', !exists ? 'missing' : enabled ? 'enabled' : 'disabled');
 
       const actions = bottom.createDiv({ cls: 'pgt-inline-actions pgt-gm2-actions-inline' });
+      this.createNativeMiniButton(
+        actions,
+        enabled ? '关闭' : '开启',
+        exists ? `${enabled ? '关闭' : '开启'}该插件` : '插件未安装，无法切换',
+        async () => {
+          if (!exists) return;
+          const result = await this.plugin.setPluginState(id, !enabled);
+          if (result?.status === 'changed') {
+            new Notice(`${enabled ? '已关闭' : '已开启'}：${this.plugin.getPluginDisplayName(id)}`);
+            await this.plugin.afterGroupAction();
+          } else if (result?.reason) {
+            new Notice(`${this.plugin.getPluginDisplayName(id)}：${result.reason}`);
+          }
+          this.renderAll();
+        },
+        !exists || this.plugin.shouldSkipPlugin(id),
+        `pgt-gm2-btn-mini pgt-gm2-btn-toggle-plugin ${enabled ? 'is-enabled' : 'is-disabled'}`
+      );
+
       this.createNativeMiniButton(actions, '上移', '上移', () => {
         this.movePlugin(id, 'up');
         this.renderSelectedList();
@@ -1336,7 +1412,7 @@ class GroupManageModal extends Modal {
         this.renderSelectedList();
       }, index === items.length - 1, 'pgt-gm2-btn-mini pgt-gm2-btn-move-down');
 
-      this.createNativeMiniButton(actions, '移除', '从分组中移除该插件', () => {
+      this.createNativeMiniButton(actions, '移除', '从场景中移除该插件', () => {
         this.removePlugin(id);
         this.renderAll();
       }, false, 'pgt-gm2-btn-mini pgt-gm2-btn-remove pgt-gm2-btn-delete-plugin');
@@ -1348,7 +1424,7 @@ class GroupManageModal extends Modal {
     const filtered = this.getFilteredAvailablePlugins();
     const selectableTotal = this.getInstalledSelectablePluginCount();
     const selectedInstalled = this.getSelectedInstalledPluginCount();
-    this.availableCounterEl.setText(`当前可添加 ${filtered.length} 个 / 已安装可选 ${selectableTotal} 个 / 已在分组 ${selectedInstalled} 个`);
+    this.availableCounterEl.setText(`当前可添加 ${filtered.length} 个 / 已安装可选 ${selectableTotal} 个 / 已在场景 ${selectedInstalled} 个`);
     this.availableListEl.empty();
 
     const hasItems = filtered.length > 0;
@@ -1357,9 +1433,9 @@ class GroupManageModal extends Modal {
     if (this.keyword) {
       this.availableEmptyEl.setText('没有匹配到可添加插件');
     } else if (selectedInstalled >= selectableTotal && selectableTotal > 0) {
-      this.availableEmptyEl.setText(`当前没有可添加插件：已安装的 ${selectableTotal} 个社区插件已全部在本分组中。请先在左侧移除部分插件。`);
+      this.availableEmptyEl.setText(`当前没有可添加插件：已安装的 ${selectableTotal} 个社区插件已全部在本场景中。请先在左侧移除部分插件。`);
     } else {
-      this.availableEmptyEl.setText('当前没有可添加插件（可能都已在分组内，或仅剩当前插件自身）');
+      this.availableEmptyEl.setText('当前没有可添加插件（可能都已在场景内，或仅剩当前插件自身）');
     }
     if (!hasItems) return;
 
@@ -1380,7 +1456,7 @@ class GroupManageModal extends Modal {
       statusEl.setAttr('data-state', enabled ? 'enabled' : 'disabled');
 
       const actions = bottom.createDiv({ cls: 'pgt-inline-actions pgt-gm2-actions-inline' });
-      this.createNativeMiniButton(actions, '添加', '添加到分组', () => {
+      this.createNativeMiniButton(actions, '添加', '添加到场景', () => {
         this.addPlugin(item.id);
         this.renderAll();
       }, false, 'pgt-gm2-btn-mini pgt-gm2-btn-add');
@@ -1400,29 +1476,33 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass('pgt-settings-tab');
 
-    containerEl.createEl('h2', { text: '插件分组开关闭' });
+    containerEl.createEl('h2', { text: '插件场景开关' });
+    containerEl.createDiv({
+      text: '每个已保存场景都会自动暴露“场景开关：名称”命令，可直接在 Obsidian「快捷键」中绑定。场景部分开启时，调用命令会先整体开启；全部开启后再次调用则整体关闭。',
+      cls: 'pgt-settings-intro',
+    });
 
     new Setting(containerEl)
       .setName('快速操作')
-      .setDesc('从设置页直接打开插件选择器，或批量开启 / 关闭已保存分组。')
+      .setDesc('从设置页直接打开插件选择器，或批量开启 / 关闭已保存场景。')
       .addButton((button) =>
         decorateButtonComponent(button.setButtonText('打开插件选择器').setCta(), { classes: ['pgt-qa-open-selector'], tooltip: '打开插件选择器' }).onClick(() => {
           new PluginSelectorModal(this.app, this.plugin).open();
         })
       )
       .addButton((button) =>
-        decorateButtonComponent(button.setButtonText('关闭插件分组'), { classes: ['pgt-qa-close-group'], tooltip: '关闭插件分组' }).onClick(() => {
+        decorateButtonComponent(button.setButtonText('批量关闭场景'), { classes: ['pgt-qa-close-group'], tooltip: '批量关闭场景' }).onClick(() => {
           if (!this.plugin.getGroups().length) {
-            new Notice('当前还没有插件分组');
+            new Notice('当前还没有插件场景');
             return;
           }
           new GroupMultiActionModal(this.app, this.plugin, 'disable').open();
         })
       )
       .addButton((button) =>
-        decorateButtonComponent(button.setButtonText('开启插件分组'), { classes: ['pgt-qa-open-group'], tooltip: '开启插件分组' }).onClick(() => {
+        decorateButtonComponent(button.setButtonText('批量开启场景'), { classes: ['pgt-qa-open-group'], tooltip: '批量开启场景' }).onClick(() => {
           if (!this.plugin.getGroups().length) {
-            new Notice('当前还没有插件分组');
+            new Notice('当前还没有插件场景');
             return;
           }
           new GroupMultiActionModal(this.app, this.plugin, 'enable').open();
@@ -1450,8 +1530,8 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('分组操作后自动刷新当前页面')
-      .setDesc('在执行单分组命令、批量开启分组、批量关闭分组后刷新当前视图。')
+      .setName('场景操作后自动刷新当前页面')
+      .setDesc('在执行单场景命令、批量开启场景、批量关闭场景后刷新当前视图。')
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.refreshAfterGroupAction).onChange(async (value) => {
           this.plugin.settings.refreshAfterGroupAction = value;
@@ -1459,11 +1539,11 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl('h3', { text: '已保存分组' });
+    containerEl.createEl('h3', { text: '已保存场景' });
 
     const groups = this.plugin.getGroups();
     if (!groups.length) {
-      containerEl.createDiv({ text: '当前还没有保存任何分组。' });
+      containerEl.createDiv({ text: '当前还没有保存任何场景。' });
       return;
     }
 
@@ -1498,17 +1578,37 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
       }
 
       const commandEl = card.createDiv({ cls: 'pgt-saved-group-command' });
-      commandEl.setText(`命令：开关分组：${group.name}`);
+      commandEl.setText(`命令：场景开关：${group.name}（可在快捷键中绑定）`);
 
       const previewWrap = card.createDiv({ cls: 'pgt-saved-group-preview' });
       if (!group.pluginIds.length) {
-        previewWrap.createDiv({ text: '当前分组为空', cls: 'pgt-saved-group-empty' });
+        previewWrap.createDiv({ text: '当前场景为空', cls: 'pgt-saved-group-empty' });
       } else {
         previewIds.forEach((id) => {
-          const chip = previewWrap.createDiv({ cls: 'pgt-saved-plugin-chip' });
+          const exists = Boolean(this.plugin.app.plugins?.manifests?.[id]);
+          const enabled = exists ? this.plugin.isPluginEnabled(id) : false;
+          const canToggle = exists && !this.plugin.shouldSkipPlugin(id);
+          const chip = previewWrap.createDiv({ cls: `pgt-saved-plugin-chip ${canToggle ? 'is-clickable' : 'is-static'}` });
+          chip.setAttr('data-state', exists ? (enabled ? 'enabled' : 'disabled') : 'missing');
+          chip.setAttr('title', canToggle ? `点击${enabled ? '关闭' : '开启'}：${this.plugin.getPluginDisplayName(id)}` : '插件未安装或已被跳过');
           chip.createSpan({ text: this.plugin.getPluginDisplayName(id), cls: 'pgt-saved-plugin-chip-name' });
-          const sub = chip.createSpan({ text: this.plugin.app.plugins?.manifests?.[id] ? (this.plugin.isPluginEnabled(id) ? '开启' : '关闭') : '未安装', cls: 'pgt-saved-plugin-chip-state' });
-          sub.setAttr('data-state', this.plugin.app.plugins?.manifests?.[id] ? (this.plugin.isPluginEnabled(id) ? 'enabled' : 'disabled') : 'missing');
+          const sub = chip.createSpan({ text: exists ? (enabled ? '开启' : '关闭') : '未安装', cls: 'pgt-saved-plugin-chip-state' });
+          sub.setAttr('data-state', exists ? (enabled ? 'enabled' : 'disabled') : 'missing');
+
+          if (canToggle) {
+            chip.addEventListener('click', async (evt) => {
+              evt.preventDefault();
+              evt.stopPropagation();
+              const result = await this.plugin.setPluginState(id, !enabled);
+              if (result?.status === 'changed') {
+                new Notice(`${enabled ? '已关闭' : '已开启'}：${this.plugin.getPluginDisplayName(id)}`);
+                await this.plugin.afterGroupAction();
+              } else if (result?.reason) {
+                new Notice(`${this.plugin.getPluginDisplayName(id)}：${result.reason}`);
+              }
+              this.display();
+            });
+          }
         });
         if (group.pluginIds.length > previewIds.length) {
           previewWrap.createDiv({ text: `+${group.pluginIds.length - previewIds.length} 个`, cls: 'pgt-saved-plugin-chip is-more' });
@@ -1518,24 +1618,24 @@ class PluginGroupToggleSettingTab extends PluginSettingTab {
       const actions = card.createDiv({ cls: 'pgt-saved-group-actions' });
 
       const manageBtn = actions.createEl('button', { text: '管理条目' });
-      applyButtonMeta(manageBtn, { classes: ['mod-cta', 'pgt-btn-manage-group'], tooltip: '管理条目', ariaLabel: `管理分组 ${group.name}` });
+      applyButtonMeta(manageBtn, { classes: ['mod-cta', 'pgt-btn-manage-group'], tooltip: '管理条目', ariaLabel: `管理场景 ${group.name}` });
       manageBtn.addEventListener('click', () => {
         new GroupManageModal(this.app, this.plugin, group.name, () => this.display()).open();
       });
 
       const toggleBtn = actions.createEl('button', { text: '开关' });
-      applyButtonMeta(toggleBtn, { classes: ['pgt-btn-toggle-group'], tooltip: '开关分组', ariaLabel: `开关分组 ${group.name}` });
+      applyButtonMeta(toggleBtn, { classes: ['pgt-btn-toggle-group'], tooltip: '开关场景', ariaLabel: `开关场景 ${group.name}` });
       toggleBtn.addEventListener('click', async () => {
         await this.plugin.toggleGroupByName(group.name);
         this.display();
       });
 
       const deleteBtn = actions.createEl('button', { text: '删除' });
-      applyButtonMeta(deleteBtn, { classes: ['warning', 'pgt-btn-delete-group'], tooltip: '删除分组', ariaLabel: `删除分组 ${group.name}` });
+      applyButtonMeta(deleteBtn, { classes: ['warning', 'pgt-btn-delete-group'], tooltip: '删除场景', ariaLabel: `删除场景 ${group.name}` });
       deleteBtn.addEventListener('click', async () => {
         const ok = await this.plugin.deleteGroup(group.name);
         if (ok) {
-          new Notice(`已删除分组：${group.name}`);
+          new Notice(`已删除场景：${group.name}`);
           this.display();
         }
       });
